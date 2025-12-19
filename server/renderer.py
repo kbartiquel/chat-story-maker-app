@@ -59,7 +59,11 @@ RESOLUTIONS = {
     "tiktok": (1080, 1920),    # 9:16
     "instagram": (1080, 1080), # 1:1
     "youtube": (1920, 1080),   # 16:9
+    "iphone": (1284, 2778),    # iPhone 12 Pro Max native (no letterboxing)
 }
+
+# Phone aspect ratio - use TikTok 9:16 as the standard phone look
+PHONE_ASPECT_RATIO = 9 / 16  # width / height = 0.5625
 
 # Typing speeds in seconds per character (matching iOS)
 TYPING_SPEEDS = {
@@ -69,6 +73,7 @@ TYPING_SPEEDS = {
 }
 
 FPS = 30
+SUPERSAMPLE_SCALE = 2  # Render at 2x resolution for anti-aliasing
 
 # iMessage specific colors
 IMESSAGE_GRAY = "#8E8E93"
@@ -122,8 +127,29 @@ class VideoRenderer:
         self.resolution = RESOLUTIONS.get(request.settings.format.value, RESOLUTIONS["tiktok"])
         self.width, self.height = self.resolution
 
-        # Scale factor (based on iPhone 14 width of 390)
-        self.scale = self.width / 390.0
+        # Apply supersample scale for anti-aliasing
+        self.render_width = self.width * SUPERSAMPLE_SCALE
+        self.render_height = self.height * SUPERSAMPLE_SCALE
+
+        # Calculate phone frame that fits within the export format
+        # Using TikTok 9:16 as the standard phone look
+        frame_aspect = self.render_width / self.render_height
+
+        if frame_aspect <= PHONE_ASPECT_RATIO:
+            # Frame is taller or equal to phone (e.g., TikTok 9:16) - fit to width
+            self.phone_width = self.render_width
+            self.phone_height = int(self.render_width / PHONE_ASPECT_RATIO)
+        else:
+            # Frame is wider than phone (e.g., Instagram 1:1, YouTube 16:9) - fit to height
+            self.phone_height = self.render_height
+            self.phone_width = int(self.render_height * PHONE_ASPECT_RATIO)
+
+        # Center offset for the phone frame
+        self.phone_x = (self.render_width - self.phone_width) // 2
+        self.phone_y = (self.render_height - self.phone_height) // 2
+
+        # Scale factor based on phone width (iPhone 14 = 390 points)
+        self.scale = self.phone_width / 390.0
 
         # Determine if group chat (3+ characters OR explicitly set)
         self._is_group_chat = request.is_group_chat or len(request.characters) > 2
@@ -136,7 +162,7 @@ class VideoRenderer:
         self.bubble_padding = int(16 * self.scale)
         self.avatar_size = int(28 * self.scale)
         self.avatar_margin = int(6 * self.scale)
-        self.max_bubble_width = int(self.width * 0.70)
+        self.max_bubble_width = int(self.phone_width * 0.70)
         self.bubble_radius = int(18 * self.scale)
         self.tail_size = int(8 * self.scale)
 
@@ -407,6 +433,9 @@ class VideoRenderer:
             fps=FPS,
             codec='libx264',
             audio_codec='aac',
+            bitrate="12M",
+            preset="slow",
+            ffmpeg_params=["-crf", "18"],
             verbose=False,
             logger=None
         )
@@ -424,10 +453,15 @@ class VideoRenderer:
         keyboard_typing_text: Optional[str] = None,
         highlighted_key: Optional[str] = None
     ) -> Image.Image:
-        """Render a single frame."""
+        """Render a single frame at high resolution, then downscale for anti-aliasing."""
         dark_mode = self.settings.dark_mode
         bg_color = "#000000" if dark_mode else "#FFFFFF"
-        img = Image.new("RGB", self.resolution, hex_to_rgb(bg_color))
+
+        # Create main frame with black background for letterboxing
+        frame = Image.new("RGB", (self.render_width, self.render_height), (0, 0, 0))
+
+        # Create phone image at iPhone aspect ratio
+        img = Image.new("RGB", (self.phone_width, self.phone_height), hex_to_rgb(bg_color))
         draw = ImageDraw.Draw(img)
 
         # Draw simplified iMessage header (centered timestamp)
@@ -437,14 +471,14 @@ class VideoRenderer:
         if self.settings.show_keyboard:
             self.draw_keyboard(draw, img, dark_mode, keyboard_typing_text, highlighted_key)
 
-        # Calculate message area
+        # Calculate message area (relative to phone frame)
         message_area_top = self.header_height + int(10 * self.scale)
         if self.settings.show_keyboard:
-            keyboard_y = self.height - self.keyboard_height
+            keyboard_y = self.phone_height - self.keyboard_height
             input_bar_y = keyboard_y - self.input_bar_height
             message_area_bottom = input_bar_y - int(10 * self.scale)
         else:
-            message_area_bottom = self.height - int(20 * self.scale)
+            message_area_bottom = self.phone_height - int(20 * self.scale)
 
         # Calculate message heights
         message_heights = []
@@ -488,7 +522,14 @@ class VideoRenderer:
         if show_typing_indicator and typing_character:
             self.draw_typing_indicator(draw, img, typing_character, y_offset, dark_mode)
 
-        return img
+        # Paste phone image onto main frame (centered)
+        frame.paste(img, (self.phone_x, self.phone_y))
+
+        # Downscale for anti-aliasing (supersampling)
+        if SUPERSAMPLE_SCALE > 1:
+            frame = frame.resize((self.width, self.height), Image.Resampling.LANCZOS)
+
+        return frame
 
     def draw_header(self, draw: ImageDraw.Draw, img: Image.Image, dark_mode: bool):
         """Draw header - 1:1 has avatar/name/video icon, group chat has timestamp."""
@@ -498,7 +539,7 @@ class VideoRenderer:
         text_color = (255, 255, 255) if dark_mode else (0, 0, 0)
 
         # Header background
-        draw.rectangle([(0, 0), (self.width, self.header_height)], fill=hex_to_rgb(header_bg))
+        draw.rectangle([(0, 0), (self.phone_width, self.header_height)], fill=hex_to_rgb(header_bg))
 
         if not self._is_group_chat:
             # === 1:1 CHAT HEADER ===
@@ -508,7 +549,7 @@ class VideoRenderer:
             contact_avatar_size = int(40 * self.scale)
 
             # Avatar centered at top
-            avatar_x = (self.width - contact_avatar_size) // 2
+            avatar_x = (self.phone_width - contact_avatar_size) // 2
             avatar_y = int(8 * self.scale)
 
             if contact:
@@ -550,7 +591,7 @@ class VideoRenderer:
                     target_width = int(target_height * aspect_ratio)
                     video_icon = video_icon.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
-                    video_x = self.width - target_width - int(16 * self.scale)
+                    video_x = self.phone_width - target_width - int(16 * self.scale)
                     video_y = debug_line_y - target_height // 2  # Centered on debug line
                     img.paste(video_icon, (video_x, video_y), video_icon)
                 except Exception as e:
@@ -561,14 +602,14 @@ class VideoRenderer:
             name_text = f"{contact_name} ›"
             bbox = draw.textbbox((0, 0), name_text, font=name_font)
             name_width = bbox[2] - bbox[0]
-            name_x = (self.width - name_width) // 2
+            name_x = (self.phone_width - name_width) // 2
             name_y = avatar_y + contact_avatar_size + int(2 * self.scale)
             draw.text((name_x, name_y), name_text, fill=text_color, font=name_font)
 
             # Separator line - below name
             separator_y = name_y + int(20 * self.scale)
             draw.line(
-                [(0, separator_y), (self.width, separator_y)],
+                [(0, separator_y), (self.phone_width, separator_y)],
                 fill=hex_to_rgb(IMESSAGE_SEPARATOR),
                 width=1
             )
@@ -578,7 +619,7 @@ class VideoRenderer:
             label_text = "iMessage"
             bbox = draw.textbbox((0, 0), label_text, font=label_font)
             label_width = bbox[2] - bbox[0]
-            label_x = (self.width - label_width) // 2
+            label_x = (self.phone_width - label_width) // 2
             label_y = separator_y + int(8 * self.scale)
             draw.text((label_x, label_y), label_text, fill=gray_color, font=label_font)
 
@@ -587,7 +628,7 @@ class VideoRenderer:
             time_text = "Today 9:41 AM"
             bbox = draw.textbbox((0, 0), time_text, font=time_font)
             time_width = bbox[2] - bbox[0]
-            time_x = (self.width - time_width) // 2
+            time_x = (self.phone_width - time_width) // 2
             time_y = label_y + int(14 * self.scale)
             draw.text((time_x, time_y), time_text, fill=gray_color, font=time_font)
 
@@ -598,7 +639,7 @@ class VideoRenderer:
             label_text = "iMessage"
             bbox = draw.textbbox((0, 0), label_text, font=label_font)
             label_width = bbox[2] - bbox[0]
-            label_x = (self.width - label_width) // 2
+            label_x = (self.phone_width - label_width) // 2
             label_y = int(8 * self.scale)
             draw.text((label_x, label_y), label_text, fill=gray_color, font=label_font)
 
@@ -607,13 +648,13 @@ class VideoRenderer:
             time_text = "Today 9:40 PM"
             bbox = draw.textbbox((0, 0), time_text, font=time_font)
             time_width = bbox[2] - bbox[0]
-            time_x = (self.width - time_width) // 2
+            time_x = (self.phone_width - time_width) // 2
             time_y = label_y + int(16 * self.scale)
             draw.text((time_x, time_y), time_text, fill=gray_color, font=time_font)
 
             # Separator line
             draw.line(
-                [(0, self.header_height - 1), (self.width, self.header_height - 1)],
+                [(0, self.header_height - 1), (self.phone_width, self.header_height - 1)],
                 fill=hex_to_rgb(IMESSAGE_SEPARATOR),
                 width=1
             )
@@ -735,7 +776,7 @@ class VideoRenderer:
             bubble_x = self.bubble_padding
         else:
             # Sent message: right-aligned, no avatar
-            bubble_x = self.width - bubble_width - self.bubble_padding
+            bubble_x = self.phone_width - bubble_width - self.bubble_padding
 
         # Draw bubble with tail
         self.draw_bubble_with_tail(draw, bubble_x, actual_y, bubble_width, bubble_height, bubble_color, is_me)
@@ -803,7 +844,7 @@ class VideoRenderer:
         highlighted_key: Optional[str]
     ):
         """Draw the iOS keyboard."""
-        keyboard_y = self.height - self.keyboard_height
+        keyboard_y = self.phone_height - self.keyboard_height
 
         row1 = list("qwertyuiop")
         row2 = list("asdfghjkl")
@@ -830,7 +871,7 @@ class VideoRenderer:
         input_height = int(32 * self.scale)
         input_margin = int(8 * self.scale)
         input_y = keyboard_y - input_height - int(10 * self.scale)
-        input_width = self.width - int(54 * self.scale)
+        input_width = self.phone_width - int(54 * self.scale)
 
         # Fill background
         draw.rounded_rectangle(
@@ -868,7 +909,7 @@ class VideoRenderer:
 
         # Send button
         send_size = int(28 * self.scale)
-        send_x = self.width - send_size - int(12 * self.scale)
+        send_x = self.phone_width - send_size - int(12 * self.scale)
         send_y = input_y + (input_height - send_size) // 2
         draw.ellipse(
             [(send_x, send_y), (send_x + send_size, send_y + send_size)],
@@ -883,14 +924,14 @@ class VideoRenderer:
         )
 
         # Keyboard background
-        draw.rectangle([(0, keyboard_y), (self.width, self.height)], fill=kb_bg)
+        draw.rectangle([(0, keyboard_y), (self.phone_width, self.phone_height)], fill=kb_bg)
 
         key_height = int(38 * self.scale)
         key_spacing = int(5 * self.scale)
         row_spacing = int(8 * self.scale)
         side_margin = int(3 * self.scale)
 
-        keyboard_width = self.width - side_margin * 2
+        keyboard_width = self.phone_width - side_margin * 2
         row1_key_width = (keyboard_width - (len(row1) - 1) * key_spacing) // len(row1)
 
         current_y = keyboard_y + int(8 * self.scale)
@@ -967,13 +1008,13 @@ class VideoRenderer:
             x += row3_key_width + key_spacing
 
         draw.rounded_rectangle(
-            [(self.width - side_margin - special_key_width, current_y),
-             (self.width - side_margin, current_y + key_height)],
+            [(self.phone_width - side_margin - special_key_width, current_y),
+             (self.phone_width - side_margin, current_y + key_height)],
             radius=int(5 * self.scale),
             fill=special_key_color
         )
         draw.text(
-            (self.width - side_margin - special_key_width + int(10 * self.scale), current_y + int(10 * self.scale)),
+            (self.phone_width - side_margin - special_key_width + int(10 * self.scale), current_y + int(10 * self.scale)),
             "⌫", fill=text_color, font=small_font
         )
 
@@ -984,7 +1025,7 @@ class VideoRenderer:
         num_key_width = int(38 * self.scale)
         emoji_key_width = int(36 * self.scale)
         return_key_width = int(60 * self.scale)
-        space_width = self.width - num_key_width - emoji_key_width - return_key_width - key_spacing * 4 - side_margin * 2
+        space_width = self.phone_width - num_key_width - emoji_key_width - return_key_width - key_spacing * 4 - side_margin * 2
 
         x = side_margin
 
@@ -1019,7 +1060,7 @@ class VideoRenderer:
         x += space_width + key_spacing
 
         draw.rounded_rectangle(
-            [(x, current_y), (self.width - side_margin, current_y + bottom_key_height)],
+            [(x, current_y), (self.phone_width - side_margin, current_y + bottom_key_height)],
             radius=int(5 * self.scale),
             fill=special_key_color
         )

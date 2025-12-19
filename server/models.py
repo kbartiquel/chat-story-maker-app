@@ -19,6 +19,7 @@ class ExportFormat(str, Enum):
     tiktok = "tiktok"      # 9:16 (1080x1920)
     instagram = "instagram" # 1:1 (1080x1080)
     youtube = "youtube"     # 16:9 (1920x1080)
+    iphone = "iphone"      # iPhone 12 Pro Max native (1284x2778)
 
 
 class TypingSpeed(str, Enum):
