@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ExportView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @State private var viewModel: ExportViewModel
+    @State private var showHistory = false
 
     init(conversation: Conversation) {
         self._viewModel = State(initialValue: ExportViewModel(conversation: conversation))
@@ -60,9 +63,27 @@ struct ExportView: View {
                     Button("Cancel") { dismiss() }
                         .disabled(viewModel.isExporting)
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showHistory = true
+                    } label: {
+                        Image(systemName: "clock.arrow.circlepath")
+                    }
+                    .disabled(viewModel.isExporting)
+                }
             }
             .sheet(isPresented: $viewModel.showShareSheet) {
                 ShareSheet(items: viewModel.shareItems)
+            }
+            .sheet(isPresented: $showHistory) {
+                ExportHistoryView()
+            }
+            .onChange(of: viewModel.lastExportHistory) { _, newHistory in
+                // Save export history to SwiftData
+                if let history = newHistory {
+                    modelContext.insert(history)
+                    viewModel.lastExportHistory = nil
+                }
             }
             .alert("Export Error", isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
@@ -81,8 +102,12 @@ struct ExportView: View {
             // Set exporting state immediately for instant UI feedback
             viewModel.isExporting = true
             viewModel.exportProgress = 0
-            Task {
-                await viewModel.startExport()
+
+            // Delay export to let UI render and animations start
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                Task {
+                    await viewModel.startExport()
+                }
             }
         } label: {
             Group {
@@ -256,6 +281,21 @@ struct ExportSettingsSection: View {
                 .font(.headline)
 
             if settings.exportType == .video {
+                // Render mode picker
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Render Mode")
+                        .font(.subheadline)
+                    Picker("Mode", selection: $settings.renderMode) {
+                        ForEach(RenderMode.allCases, id: \.self) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Text(settings.renderMode.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
                 // Video-specific settings
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Typing Speed")
@@ -311,140 +351,81 @@ struct ExportProgressOverlay: View {
     let progress: Double
     let isVideo: Bool
 
-    @State private var isAnimating = false
-    @State private var simulatedPercent: Int = 1
-
-    func statusText(for displayProgress: Double) -> String {
-        if displayProgress < 0.1 {
-            return "Preparing..."
-        } else if displayProgress < 0.8 {
-            return isVideo ? "Rendering frames..." : "Generating image..."
-        } else if displayProgress < 0.95 {
-            return isVideo ? "Adding audio..." : "Finishing up..."
-        } else {
-            return "Almost done..."
-        }
-    }
-
-    // Display the higher of simulated or real progress
-    var displayProgress: Double {
-        max(Double(simulatedPercent) / 100.0, progress)
-    }
-
     var body: some View {
         ZStack {
             // Semi-transparent background
-            Color.black.opacity(0.6)
+            Color.black.opacity(0.7)
                 .ignoresSafeArea()
 
             // Progress card
-            VStack(spacing: 24) {
-                // Animated icon
+            VStack(spacing: 20) {
+                // Circular progress indicator with percentage
                 ZStack {
-                    // Background ring
+                    // Background circle
                     Circle()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 8)
-                        .frame(width: 100, height: 100)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 12)
+                        .frame(width: 120, height: 120)
 
-                    // Progress ring
+                    // Progress arc glow (behind)
                     Circle()
-                        .trim(from: 0, to: displayProgress)
+                        .trim(from: 0, to: progress)
+                        .stroke(
+                            Color.cyan.opacity(0.5),
+                            style: StrokeStyle(lineWidth: 16, lineCap: .round)
+                        )
+                        .frame(width: 120, height: 120)
+                        .rotationEffect(.degrees(-90))
+                        .blur(radius: 4)
+
+                    // Progress arc
+                    Circle()
+                        .trim(from: 0, to: progress)
                         .stroke(
                             LinearGradient(
-                                colors: [.blue, .purple],
+                                colors: [.blue, .cyan],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                            style: StrokeStyle(lineWidth: 12, lineCap: .round)
                         )
-                        .frame(width: 100, height: 100)
+                        .frame(width: 120, height: 120)
                         .rotationEffect(.degrees(-90))
 
-                    // Percentage text
-                    VStack(spacing: 2) {
-                        Text("\(Int(displayProgress * 100))")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("%")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white.opacity(0.7))
-                    }
+                    // Percentage text in center
+                    Text("\(Int(progress * 100))%")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .contentTransition(.numericText())
                 }
+                .animation(.easeOut(duration: 0.2), value: progress)
+
+                // Title
+                Text(isVideo ? "Exporting Video" : "Exporting Screenshot")
+                    .font(.headline)
+                    .foregroundColor(.white)
 
                 // Status text
-                VStack(spacing: 8) {
-                    Text(isVideo ? "Exporting Video" : "Exporting Screenshot")
-                        .font(.headline)
-                        .foregroundColor(.white)
-
-                    Text(statusText(for: displayProgress))
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
-
-                    // Animated dots
-                    HStack(spacing: 4) {
-                        ForEach(0..<3, id: \.self) { index in
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 6, height: 6)
-                                .opacity(isAnimating ? 1 : 0.3)
-                                .animation(
-                                    .easeInOut(duration: 0.6)
-                                        .repeatForever()
-                                        .delay(Double(index) * 0.2),
-                                    value: isAnimating
-                                )
-                        }
-                    }
-                    .padding(.top, 4)
-                }
-
-                // Tip text
-                Text("Please wait, this may take a moment...")
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.5))
-                    .padding(.top, 8)
+                Text(statusText)
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.7))
             }
-            .padding(32)
+            .padding(40)
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.3), radius: 20)
             )
-        }
-        .onAppear {
-            isAnimating = true
-            startFakeProgress()
         }
     }
 
-    private func startFakeProgress() {
-        Task {
-            while simulatedPercent < 79 {
-                // Variable delay based on current progress
-                let delayMs: UInt64
-                if simulatedPercent < 10 {
-                    delayMs = 250  // Fast: 1% every 0.25s (0-10% in ~2.5s)
-                } else if simulatedPercent < 30 {
-                    delayMs = 350  // Medium: 1% every 0.35s (10-30% in ~7s)
-                } else if simulatedPercent < 50 {
-                    delayMs = 500  // Slower: 1% every 0.5s (30-50% in ~10s)
-                } else if simulatedPercent < 70 {
-                    delayMs = 800  // Even slower: 1% every 0.8s (50-70% in ~16s)
-                } else {
-                    delayMs = 1500 // Very slow: 1% every 1.5s (70-79% in ~13.5s)
-                }
-
-                try? await Task.sleep(nanoseconds: delayMs * 1_000_000)
-
-                // Only increment if simulated is still ahead of real progress
-                let realPercent = Int(progress * 100)
-                await MainActor.run {
-                    if simulatedPercent >= realPercent && simulatedPercent < 79 {
-                        simulatedPercent += 1
-                    }
-                }
-            }
+    private var statusText: String {
+        if progress < 0.1 {
+            return "Preparing..."
+        } else if progress < 0.8 {
+            return isVideo ? "Rendering frames..." : "Generating image..."
+        } else if progress < 0.95 {
+            return isVideo ? "Adding audio..." : "Finishing up..."
+        } else {
+            return "Almost done..."
         }
     }
 }

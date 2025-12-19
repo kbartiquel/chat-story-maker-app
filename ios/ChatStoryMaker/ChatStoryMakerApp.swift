@@ -15,7 +15,7 @@ struct ChatStoryMakerApp: App {
 
     init() {
         do {
-            let schema = Schema([Conversation.self, Character.self, Message.self, Folder.self])
+            let schema = Schema([Conversation.self, Character.self, Message.self, Folder.self, ExportHistory.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             container = try ModelContainer(for: schema, configurations: [config])
             createDemoChatIfNeeded(container: container)
@@ -24,7 +24,7 @@ struct ChatStoryMakerApp: App {
             print("ModelContainer error: \(error). Attempting to reset database...")
             do {
                 // Delete existing store and create fresh
-                let schema = Schema([Conversation.self, Character.self, Message.self, Folder.self])
+                let schema = Schema([Conversation.self, Character.self, Message.self, Folder.self, ExportHistory.self])
                 let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
                 // Try to delete old data

@@ -51,3 +51,4 @@ iOSInjectionProject/
 *.p8
 *.p12
 *.mobileprovision
+server/venv/

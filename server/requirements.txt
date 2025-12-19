@@ -1,0 +1,22 @@
+# ChatStoryMaker Server Dependencies
+
+# Web framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Image processing
+Pillow==10.2.0
+pilmoji==2.0.4  # Emoji rendering in Pillow
+
+# Video processing
+moviepy==1.0.3
+numpy==1.26.3
+
+# Cloud storage (optional)
+cloudinary==1.38.0
+
+# Data validation
+pydantic==2.5.3
+
+# For production
+gunicorn==21.2.0

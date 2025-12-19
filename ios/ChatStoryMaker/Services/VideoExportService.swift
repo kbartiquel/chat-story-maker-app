@@ -11,23 +11,42 @@ import SwiftUI
 
 class VideoExportService {
 
-    struct ExportConfig {
-        let messages: [Message]
-        let characters: [Character]
+    // Simple data structs for thread-safe export (no SwiftData)
+    struct ExportMessage: Sendable {
+        let id: UUID
+        let text: String
+        let characterID: UUID
+    }
+
+    struct ExportCharacter: Sendable {
+        let id: UUID
+        let name: String
+        let isMe: Bool
+        let colorHex: String
+        let avatarEmoji: String?
+        let avatarImageData: Data?
+    }
+
+    struct ExportConfig: Sendable {
+        let messages: [ExportMessage]
+        let characters: [ExportCharacter]
         let theme: ChatTheme
         let settings: ExportSettings
         let conversationTitle: String
         let isGroupChat: Bool
-        let getCharacter: (UUID) -> Character?
 
-        var mainContact: Character? {
+        func getCharacter(for id: UUID) -> ExportCharacter? {
+            characters.first { $0.id == id }
+        }
+
+        var mainContact: ExportCharacter? {
             characters.first { !$0.isMe }
         }
     }
 
     // Track when each message appears for audio sync
-    struct MessageTiming {
-        let message: Message
+    struct MessageTiming: Sendable {
+        let messageID: UUID
         let timeInSeconds: Double
         let isMe: Bool
     }
@@ -75,7 +94,7 @@ class VideoExportService {
         progress(0.05)
 
         var frameCount: Int64 = 0
-        var visibleMessages: [(Message, String)] = []
+        var visibleMessages: [(ExportMessage, String)] = []
 
         // Typing speed: frames per character based on settings
         let framesPerChar = config.settings.typingSpeed.framesPerChar
@@ -84,7 +103,10 @@ class VideoExportService {
 
         // Render frames for each message - REALISTIC CHAT SIMULATION
         for (index, message) in config.messages.enumerated() {
-            let character = config.getCharacter(message.characterID)
+            // Yield to allow UI updates (animations) to process
+            await Task.yield()
+
+            let character = config.getCharacter(for: message.characterID)
             let isMe = character?.isMe ?? true
 
             // Calculate base progress for this message (5% to 80% range = 75% for messages)
@@ -117,6 +139,11 @@ class VideoExportService {
                         }
                     }
 
+                    // Yield every 3 characters to allow UI updates
+                    if charIndex % 3 == 0 {
+                        await Task.yield()
+                    }
+
                     // Update progress during typing (first 60% of message progress)
                     let typingProgress = Double(charIndex) / Double(totalChars) * 0.6
                     progress(messageBaseProgress + typingProgress * messageProgressRange)
@@ -139,9 +166,12 @@ class VideoExportService {
                     }
                 }
 
+                // Yield after pause frames
+                await Task.yield()
+
                 // Record timing when message is sent (for audio sync)
                 let messageTime = Double(frameCount) / Double(fps)
-                messageTimings.append(MessageTiming(message: message, timeInSeconds: messageTime, isMe: isMe))
+                messageTimings.append(MessageTiming(messageID: message.id, timeInSeconds: messageTime, isMe: isMe))
 
                 // Message appears (sent!)
                 visibleMessages.append((message, message.text))
@@ -172,9 +202,12 @@ class VideoExportService {
                     }
                 }
 
+                // Yield after typing indicator frames
+                await Task.yield()
+
                 // Record timing when message appears (for audio sync)
                 let messageTime = Double(frameCount) / Double(fps)
-                messageTimings.append(MessageTiming(message: message, timeInSeconds: messageTime, isMe: isMe))
+                messageTimings.append(MessageTiming(messageID: message.id, timeInSeconds: messageTime, isMe: isMe))
 
                 // Message appears
                 visibleMessages.append((message, message.text))
@@ -203,6 +236,9 @@ class VideoExportService {
                 }
             }
 
+            // Yield after reading time frames
+            await Task.yield()
+
             // Update progress after reading time (100% of message progress)
             progress(messageBaseProgress + messageProgressRange)
         }
@@ -225,6 +261,9 @@ class VideoExportService {
                 frameCount += 1
             }
         }
+
+        // Yield after final pause
+        await Task.yield()
 
         progress(0.85)
 
@@ -420,8 +459,8 @@ class VideoExportService {
     }
 
     private func renderFrame(
-        visibleMessages: [(Message, String)],
-        typingText: (Message, String, Bool)?,
+        visibleMessages: [(ExportMessage, String)],
+        typingText: (ExportMessage, String, Bool)?,
         showTypingIndicator: Bool,
         typingIsMe: Bool,
         config: ExportConfig,
@@ -480,7 +519,7 @@ class VideoExportService {
             var messageHeights: [CGFloat] = []
 
             for (message, text) in visibleMessages {
-                let character = config.getCharacter(message.characterID)
+                let character = config.getCharacter(for: message.characterID)
                 let isMe = character?.isMe ?? true
                 let height = calculateBubbleHeight(
                     text: text,
@@ -523,7 +562,7 @@ class VideoExportService {
             // Draw only the messages that fit (from startIndex onwards)
             for i in startIndex..<visibleMessages.count {
                 let (message, text) = visibleMessages[i]
-                let character = config.getCharacter(message.characterID)
+                let character = config.getCharacter(for: message.characterID)
                 let isMe = character?.isMe ?? true
 
                 yOffset = drawBubble(
@@ -757,7 +796,7 @@ class VideoExportService {
     private func drawBubble(
         text: String,
         isMe: Bool,
-        character: Character?,
+        character: ExportCharacter?,
         isGroupChat: Bool,
         at yOffset: CGFloat,
         maxWidth: CGFloat,

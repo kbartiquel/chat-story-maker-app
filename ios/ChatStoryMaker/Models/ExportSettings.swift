@@ -21,6 +21,28 @@ struct ExportSettings {
     var showTimestamps: Bool = true
     var showReactions: Bool = true
     var imageQuality: ImageQuality = .high
+
+    // Render mode (device or server)
+    var renderMode: RenderMode = .device
+}
+
+enum RenderMode: String, CaseIterable {
+    case device   // Render on device (original implementation)
+    case server   // Render on server (faster, requires internet)
+
+    var displayName: String {
+        switch self {
+        case .device: return "On Device"
+        case .server: return "Cloud"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .device: return "Render locally (no internet needed)"
+        case .server: return "Render on server (faster)"
+        }
+    }
 }
 
 enum ExportType: String, CaseIterable {

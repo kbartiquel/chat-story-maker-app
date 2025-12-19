@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UIKit
+import AVFoundation
 
 @Observable
 class ExportViewModel {
@@ -19,11 +20,56 @@ class ExportViewModel {
     var showShareSheet = false
     var errorMessage: String?
 
+    // Export history record to be saved after successful export
+    var lastExportHistory: ExportHistory?
+
     private let videoExportService = VideoExportService()
+    private let serverExportService = ServerExportService()
     private let imageExportService = ImageExportService()
 
     init(conversation: Conversation) {
         self.conversation = conversation
+    }
+
+    /// Create export history record after successful export
+    func createExportHistory(videoURL: URL? = nil, localPath: String? = nil, jobId: String? = nil) -> ExportHistory {
+        // Generate thumbnail from first frame or video
+        var thumbnailData: Data?
+        if let url = videoURL ?? exportedVideoURL {
+            thumbnailData = generateThumbnail(from: url)
+        } else if let image = exportedImage {
+            thumbnailData = image.jpegData(compressionQuality: 0.5)
+        }
+
+        return ExportHistory(
+            conversationTitle: conversation.title,
+            exportType: settings.exportType,
+            renderMode: settings.renderMode,
+            format: settings.format,
+            videoURL: videoURL?.absoluteString,
+            localPath: localPath ?? exportedVideoURL?.path,
+            thumbnailData: thumbnailData,
+            duration: nil,
+            messageCount: conversation.messages.count,
+            jobId: jobId
+        )
+    }
+
+    private func generateThumbnail(from url: URL) -> Data? {
+        // For local files, generate thumbnail from video
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+
+        let asset = AVURLAsset(url: url)
+        let imageGenerator = AVAssetImageGenerator(asset: asset)
+        imageGenerator.appliesPreferredTrackTransform = true
+
+        do {
+            let cgImage = try imageGenerator.copyCGImage(at: .zero, actualTime: nil)
+            let uiImage = UIImage(cgImage: cgImage)
+            return uiImage.jpegData(compressionQuality: 0.5)
+        } catch {
+            return nil
+        }
     }
 
     var canExport: Bool {
@@ -73,46 +119,101 @@ class ExportViewModel {
     }
 
     private func performVideoExport() async {
+        // Convert SwiftData objects to simple structs ON MAIN THREAD (quick)
+        let exportMessages = conversation.sortedMessages.map { msg in
+            VideoExportService.ExportMessage(
+                id: msg.id,
+                text: msg.text,
+                characterID: msg.characterID
+            )
+        }
 
-        // Prepare config with copies of data to avoid main actor access during export
-        let messages = conversation.sortedMessages
-        let characters = conversation.characters
+        let exportCharacters = conversation.characters.map { char in
+            VideoExportService.ExportCharacter(
+                id: char.id,
+                name: char.name,
+                isMe: char.isMe,
+                colorHex: char.colorHex,
+                avatarEmoji: char.avatarEmoji,
+                avatarImageData: char.avatarImageData
+            )
+        }
+
         let theme = conversation.theme
         let exportSettings = settings
         let title = conversation.title
         let isGroup = conversation.isGroupChat
 
+        // Create config with plain data (thread-safe)
         let config = VideoExportService.ExportConfig(
-            messages: messages,
-            characters: characters,
+            messages: exportMessages,
+            characters: exportCharacters,
             theme: theme,
             settings: exportSettings,
             conversationTitle: title,
-            isGroupChat: isGroup,
-            getCharacter: { id in
-                characters.first { $0.id == id }
-            }
+            isGroupChat: isGroup
         )
 
-        // Capture self weakly for progress updates
-        let updateProgress: @Sendable (Double) -> Void = { [weak self] progress in
-            Task { @MainActor in
-                self?.exportProgress = progress
-            }
-        }
+        // Capture weak self for progress updates
+        weak var weakSelf = self
 
-        // Run heavy export work on background thread
+        // Choose render mode based on settings
+        if settings.renderMode == .server {
+            // SERVER RENDERING
+            await performServerExport(config: config, weakSelf: weakSelf)
+        } else {
+            // DEVICE RENDERING (original implementation)
+            await performDeviceExport(config: config, weakSelf: weakSelf)
+        }
+    }
+
+    private func performDeviceExport(config: VideoExportService.ExportConfig, weakSelf: ExportViewModel?) async {
+        let service = videoExportService
+
+        // Use Task.detached to run export on background thread pool
+        // This allows Task.yield() in the export loop to actually yield
         do {
-            let service = videoExportService
-            let url = try await Task.detached(priority: .userInitiated) {
-                try await service.exportVideo(config: config, progress: updateProgress)
+            let url = try await Task.detached(priority: .userInitiated) { [service, config] in
+                try await service.exportVideo(config: config) { progress in
+                    // Update progress on main actor
+                    Task { @MainActor in
+                        weakSelf?.exportProgress = progress
+                    }
+                }
             }.value
 
+            // Back on main actor - update UI
+            exportedVideoURL = url
+            exportedImage = nil
+            isExporting = false
+            showShareSheet = true
+            lastExportHistory = createExportHistory(localPath: url.path)
+            HapticManager.notification(.success)
+        } catch {
+            errorMessage = error.localizedDescription
+            isExporting = false
+            HapticManager.notification(.error)
+        }
+    }
+
+    private func performServerExport(config: VideoExportService.ExportConfig, weakSelf: ExportViewModel?) async {
+        let service = serverExportService
+
+        do {
+            let url = try await service.exportVideo(config: config) { progress in
+                // Update progress on main actor
+                Task { @MainActor in
+                    weakSelf?.exportProgress = progress
+                }
+            }
+
+            // Back on main actor - update UI
             await MainActor.run {
                 self.exportedVideoURL = url
                 self.exportedImage = nil
                 self.isExporting = false
                 self.showShareSheet = true
+                self.lastExportHistory = self.createExportHistory(videoURL: url, localPath: url.path)
                 HapticManager.notification(.success)
             }
         } catch {
