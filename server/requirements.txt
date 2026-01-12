@@ -18,5 +18,10 @@ cloudinary==1.38.0
 # Data validation
 pydantic==2.5.3
 
+# AI Services
+openai>=1.0.0
+anthropic>=0.18.0
+python-dotenv>=1.0.0
+
 # For production
 gunicorn==21.2.0

@@ -8,12 +8,17 @@
 
 import SwiftUI
 import SwiftData
+import Aptabase
 
 @main
 struct ChatStoryMakerApp: App {
     let container: ModelContainer
 
     init() {
+        // Initialize analytics
+        AnalyticsService.shared.initialize()
+        AnalyticsService.shared.trackAppLaunch()
+
         do {
             let schema = Schema([Conversation.self, Character.self, Message.self, Folder.self, ExportHistory.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

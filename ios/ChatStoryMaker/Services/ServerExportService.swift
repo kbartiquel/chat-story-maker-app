@@ -15,7 +15,7 @@ class ServerExportService {
     // Change this to your Render URL after deployment
     // For local testing: "http://YOUR_MAC_IP:8000"
     // For production: "https://your-app.onrender.com"
-    static var baseURL: String = "http://192.168.1.11:8000"
+    static var baseURL: String = "http://192.168.1.4:8000"
 
     // MARK: - Models
 

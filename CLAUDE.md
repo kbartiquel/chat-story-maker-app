@@ -7,12 +7,13 @@ iOS app for creating fake text message conversations and exporting them as video
 ### iOS App
 - iOS 17+, SwiftUI, SwiftData
 - MVVM architecture
-- AVFoundation for on-device video export
+- Cloud-based video export (server rendering)
 
-### Python Server (Cloud Rendering)
+### Python Server
 - FastAPI + Uvicorn
 - Pillow + pilmoji (emoji support)
 - MoviePy for video encoding
+- OpenAI GPT / Anthropic Claude for AI generation
 - Deployable to Render.com (~$7/month)
 
 ## Features Implemented
@@ -22,50 +23,67 @@ iOS app for creating fake text message conversations and exporting them as video
 - **Character management**: Custom names, colors, avatars (emoji or photo)
 - **Message types**: Text and image messages
 - **Message reactions**: iMessage-style reactions overlapping bubble corners
-- **Timestamps**: Editable custom times for storytelling
+- **Timestamps**: Editable custom times per message for storytelling
 - **Delivery status**: iMessage-style "Delivered"/"Read" text
 - **Drag-to-reorder**: Reorganize message order
+- **Group chats**: Support for 2-10 characters with editable group name
 
 ### Export
-- **Video export**: Realistic chat simulation with:
+- **Video export**: Server-rendered chat simulation with:
   - Keyboard typing animation with key highlighting
   - Text appearing character-by-character in input field
   - Typing indicator for received messages
-  - Sound effects (server rendering only - MP3 files)
-- **Render modes**:
-  - **Device**: On-device rendering using AVFoundation (works offline, no audio)
-  - **Cloud/Server**: Server-side rendering via Python API (faster, supports emojis + audio)
+  - Sound effects (send.mp3/receive.mp3)
 - **Screenshot export**: Static image with quality options
 - **Formats**: TikTok (9:16), Instagram (1:1), YouTube (16:9)
 - **Dark mode** option for exports
-- **Export History**: Dedicated tab to view/play/share past exports
+- **Export History**:
+  - Dedicated tab to view past exports
+  - Tap to play video in sheet player
+  - Swipe left for Share/Delete actions
 
-### AI Generation
-- **Claude API integration**: Generate conversations using AI
-- **Genres**: Romance, Horror, Comedy, Drama, etc.
-- **Moods**: Happy, Sad, Tense, etc.
-- **Story lengths**: Short, Medium, Long
+### AI Story Generation
+- **Server-side generation**: Uses Python server `/generate` endpoint
+- **Dual AI support**: OpenAI GPT or Anthropic Claude (env configurable)
+- **Chat types**:
+  - 1-on-1 (2 characters)
+  - Group chat (3-10 characters with slider)
+- **Genres**: Romance, Horror, Comedy, Drama, Mystery, Thriller, Friendship, Family + Custom text input
+- **Moods**: Happy, Sad, Tense, Funny, Romantic, Scary, Dramatic, Casual + Custom text input
+- **Story lengths**: Short (~10), Medium (~18), Long (~30) messages
+- **Group chat names**: AI generates realistic names like "birthday squad", "the boys", "fam"
+- **No avatars**: Generated characters use first letter fallback (user can add later)
 
 ### Organization
 - **Folders**: Create colored folders to organize conversations
 - **Search**: Search by title or message content
 - **Duplicate**: Deep copy conversations as templates
 
+## Tab Navigation
+```
+TabView {
+  Stories (HomeView)              - Conversation list
+  Generate (AIGeneratorView)      - AI story generation
+  Exports (ExportHistoryTabView)  - Export history with play/share
+  Settings (SettingsView)         - App settings
+}
+```
+
 ## Architecture
 
-### Models (`/Models`)
+### Models (`ios/ChatStoryMaker/Models/`)
 | File | Purpose |
 |------|---------|
-| `Conversation.swift` | Main container with characters, messages, theme, folder |
+| `Conversation.swift` | Main container with characters, messages, theme, folder, isGroupChat |
 | `Character.swift` | Name, color, avatar (emoji/photo), isMe flag |
 | `Message.swift` | Text/image, reactions, status, timestamps |
 | `MessageType.swift` | Enums: MessageType, DeliveryStatus, ReceiptStyle, Reaction |
 | `Folder.swift` | Folder organization |
 | `Theme.swift` | iMessage theme colors |
-| `ExportSettings.swift` | Video/screenshot export options, RenderMode enum |
+| `ExportSettings.swift` | Video/screenshot export options |
 | `ExportHistory.swift` | SwiftData model for tracking past exports |
 
-### Views (`/Views`)
+### Views (`ios/ChatStoryMaker/Views/`)
 
 **Home**
 - `HomeView.swift` - Main list with search, folders, swipe actions
@@ -75,45 +93,179 @@ iOS app for creating fake text message conversations and exporting them as video
 
 **Editor**
 - `ChatEditorView.swift` - Main chat editor with reorder mode
-- `MessageBubbleView.swift` - Chat bubble with image/reactions/status support
+- `MessageBubbleView.swift` - Chat bubble with image/reactions/status
 - `MessageInputView.swift` - Text input + photo picker
 - `CharacterSwitcherView.swift` - Character selection buttons
 - `MessageReactionsView.swift` - iMessage-style reaction pills
-- `DeliveryStatusView.swift` - iMessage "Delivered"/"Read" text
+- `DeliveryStatusView.swift` - "Delivered"/"Read" text
 - `TimestampView.swift` - Formatted time display
-- `TimestampEditorView.swift` - Date/time picker
+- `TimestampEditorView.swift` - Date/time picker per message
 - `StatusPickerView.swift` - Delivery status selection
 - `ReactionPickerView.swift` - Emoji reaction picker
 
 **Export**
-- `ExportView.swift` - Export settings with type/format/render mode pickers
-- `ExportHistoryView.swift` - Export history list with play/share (sheet + tab versions)
+- `ExportView.swift` - Export settings (format, dark mode, etc.)
+- `ExportHistoryView.swift` - History list with swipe actions, sheet video player
 
 **AI**
-- `AIGeneratorView.swift` - AI conversation generator with genre/mood/length options
+- `AIGeneratorView.swift` - Clean UI with genre/mood/length/character count options
 
 **Setup**
 - `NewConversationView.swift` - Create new conversation
 - `CharacterEditorView.swift` - Edit character with photo picker
 
-### ViewModels (`/ViewModels`)
+### ViewModels (`ios/ChatStoryMaker/ViewModels/`)
 | File | Purpose |
 |------|---------|
 | `ConversationViewModel.swift` | CRUD conversations, folders, search, duplicate |
 | `ChatEditorViewModel.swift` | Message operations, reactions, timestamps, status |
 | `ExportViewModel.swift` | Video/screenshot export orchestration |
-| `AIGeneratorViewModel.swift` | AI conversation generation with Claude API |
+| `AIGeneratorViewModel.swift` | AI generation with custom genre/mood, group name handling |
 | `SettingsViewModel.swift` | App settings management |
 
-### Services (`/Services`)
+### Services (`ios/ChatStoryMaker/Services/`)
 | File | Purpose |
 |------|---------|
-| `VideoExportService.swift` | AVAssetWriter video rendering with typing simulation |
-| `ServerExportService.swift` | API client for cloud/server video rendering |
+| `VideoExportService.swift` | On-device AVAssetWriter rendering (backup) |
+| `ServerExportService.swift` | API client for server video rendering |
 | `ImageExportService.swift` | UIGraphicsImageRenderer screenshot |
 | `AudioService.swift` | iOS system sounds for editing feedback |
-| `AIService.swift` | Claude API integration for AI story generation |
+| `AIService.swift` | Server API client for AI story generation |
 | `PurchaseService.swift` | Premium features (bypassed - all free) |
+
+## Server API
+
+### Endpoints
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/` | GET | Health check with version |
+| `/health` | GET | Simple health check |
+| `/render` | POST | Start video render job, returns `job_id` |
+| `/status/{job_id}` | GET | Poll render progress (0.0-1.0) |
+| `/download/{job_id}` | GET | Download rendered video |
+| `/generate` | POST | Generate AI chat story |
+| `/ai-status` | GET | Get AI service configuration status |
+
+### Server Files (`server/`)
+| File | Purpose |
+|------|---------|
+| `main.py` | FastAPI server with all endpoints |
+| `renderer.py` | Video rendering engine (iMessage styling) |
+| `ai_service.py` | AI generation with OpenAI/Claude support |
+| `models.py` | Pydantic request/response models |
+| `requirements.txt` | Python dependencies |
+| `.env.example` | Environment variables template |
+| `assets/send.mp3` | Sound for sent messages |
+| `assets/receive.mp3` | Sound for received messages |
+
+### Environment Configuration (`.env`)
+```bash
+# AI Service (choose one)
+AI_SERVICE=anthropic  # or "openai"
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o
+
+# Anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
+
+# Optional: Cloudinary for cloud video storage
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+```
+
+### Running Server Locally
+```bash
+cd server
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Create .env file with your API keys
+cp .env.example .env
+# Edit .env with your keys
+
+# Run server
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Update `ServerExportService.baseURL` in iOS to your Mac's IP:
+```swift
+static var baseURL: String = "http://YOUR_MAC_IP:8000"
+```
+
+### AI Generation Request/Response
+
+**Request:**
+```json
+{
+  "topic": "Planning a surprise birthday party",
+  "num_messages": 15,
+  "genre": "comedy",
+  "mood": "happy",
+  "num_characters": 4,
+  "character_names": null
+}
+```
+
+**Response:**
+```json
+{
+  "title": "The Surprise Party Disaster",
+  "group_name": "party planning committee",
+  "characters": [
+    {"id": "1", "name": "Me", "is_me": true, "suggested_color": "#007AFF", "suggested_emoji": null},
+    {"id": "2", "name": "Sarah", "is_me": false, "suggested_color": "#34C759", "suggested_emoji": null}
+  ],
+  "messages": [
+    {"id": "m1", "character_id": "1", "text": "guys we need to plan this party asap"},
+    {"id": "m2", "character_id": "2", "text": "omg yes!! when should we do it?"}
+  ]
+}
+```
+
+- `group_name` is only populated for group chats (3+ characters), null for 1-on-1
+- iOS uses `group_name` as conversation title for groups, `title` for 1-on-1
+
+## Video Rendering Details
+
+### iMessage Styling (renderer.py)
+
+**1:1 Chat (2 characters)**
+- Header: Contact avatar (40px), name, FaceTime video icon
+- No avatars on message bubbles
+- Bubbles have tails (polygon-drawn)
+- Header height: 120px
+
+**Group Chat (3+ characters)**
+- Header: Centered group name (editable)
+- Avatars (28px) LEFT of received message bubbles
+- Character names above received messages
+- No video icon in header
+- Header height: 50px
+
+### Message Positioning
+```python
+if total_all_messages <= available_height:
+    # FEW MESSAGES: Start from TOP
+    y_offset = message_area_top
+else:
+    # MANY MESSAGES: Auto-scroll from bottom
+    y_offset = message_area_bottom - total_all_messages
+```
+
+### Avatar Priority
+1. **Base64 image** - Photo avatars (compressed JPEG)
+2. **Emoji** - Rendered via pilmoji
+3. **Initial** - Colored circle with first letter
+
+### Sound Effects
+- `send.mp3` - Played when "Me" sends a message
+- `receive.mp3` - Played when receiving a message
+- Mixed via MoviePy's CompositeAudioClip
 
 ## Key Implementation Details
 
@@ -124,24 +276,7 @@ iOS app for creating fake text message conversations and exporting them as video
 - `@Attribute(.externalStorage)` for image data
 - JSON encoding for arrays (`reactionsData`)
 
-### Video Export
-- On-device: AVAssetWriter renders frames with typing animation
-- Server: MoviePy renders video with MP3 sound effects (send.mp3/receive.mp3)
-
-### Keyboard Rendering
-Realistic iOS keyboard with key highlighting:
-```swift
-// Full QWERTY layout with special keys
-let row1 = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"]
-let row2 = ["a", "s", "d", "f", "g", "h", "j", "k", "l"]
-let row3 = ["z", "x", "c", "v", "b", "n", "m"]
-// + shift, delete, 123, emoji, space, return
-
-// Currently typed key is highlighted
-let isHighlighted = highlightedKey?.lowercased() == char
-```
-
-### Video Export Fix (Simulator)
+### Video Export (Simulator Fix)
 Pixel buffer format must use BGRA for Simulator compatibility:
 ```swift
 kCVPixelFormatType_32BGRA
@@ -149,104 +284,9 @@ CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.premultipliedFirst.ra
 ```
 
 ### Reactions Positioning
-iMessage-style reactions overlap bubble corners using ZStack:
+iMessage-style reactions overlap bubble corners:
 - Sender: `alignment: .topLeading`, offset `x: -8, y: -12`
 - Receiver: `alignment: .topTrailing`, offset `x: 8, y: -12`
-
-### Receipt Styles
-iMessage-style delivery status:
-- "Delivered" - Message received by recipient
-- "Read" - Message read by recipient
-
-## Tab Navigation
-```
-TabView {
-  Stories (HomeView)              - Conversation list
-  AI Generate (AIGeneratorView)   - AI features
-  Exports (ExportHistoryTabView)  - Export history with play/share
-  Settings (SettingsView)         - App settings
-}
-```
-
-## Server/Cloud Rendering
-
-### Overview
-The Python server provides an alternative to on-device rendering with better emoji support via `pilmoji`.
-
-### API Endpoints
-- `POST /render` - Start render job, returns `job_id`
-- `GET /status/{job_id}` - Poll for progress (0.0-1.0)
-- `GET /download/{job_id}` - Download rendered video
-- `GET /health` - Health check
-
-### Running Locally
-```bash
-cd server
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python main.py  # Runs on http://localhost:8000
-```
-
-Update `ServerExportService.baseURL` to your Mac's IP for phone testing:
-```swift
-static var baseURL: String = "http://YOUR_MAC_IP:8000"
-```
-
-### iMessage Styling (renderer.py)
-Two rendering modes based on character count:
-
-**1:1 Chat (2 characters)**
-- Header: Contact avatar (40px), name, FaceTime video icon
-- No avatars or names on message bubbles
-- Bubbles have tails (polygon-drawn)
-- Header height: 120px
-
-**Group Chat (3+ characters)**
-- Header: Simple centered timestamp only
-- Avatars (28px) displayed LEFT of received message bubbles
-- Character names shown above received messages
-- Header height: 50px
-
-### Message Positioning
-Messages start from TOP when few messages fit the screen:
-```python
-if total_all_messages <= available_height:
-    # FEW MESSAGES: Start from TOP
-    y_offset = message_area_top
-else:
-    # MANY MESSAGES: Auto-scroll from bottom
-    y_offset = message_area_bottom - total_all_messages
-```
-
-### Sound Effects
-Uses actual MP3 files for authentic sounds:
-- `server/assets/send.mp3` - Played when "Me" sends a message
-- `server/assets/receive.mp3` - Played when receiving a message
-
-Audio mixing via MoviePy's CompositeAudioClip:
-```python
-def create_audio(self, total_duration: float):
-    from moviepy.editor import AudioFileClip, CompositeAudioClip
-    clips = []
-    for timing in self.message_timings:
-        sound_path = send_path if timing["is_me"] else receive_path
-        clip = AudioFileClip(sound_path).set_start(timing["time"])
-        clips.append(clip)
-    return CompositeAudioClip(clips).set_duration(total_duration)
-```
-
-### Avatar Support
-Server supports three avatar types (in priority order):
-1. **Base64 image** - Photo avatars sent as compressed JPEG base64
-2. **Emoji** - Rendered using pilmoji library
-3. **Initial** - Fallback colored circle with first letter
-
-### Deployment (Render.com)
-1. Push server folder to GitHub
-2. Create new Web Service on Render.com
-3. Use `render.yaml` for configuration
-4. ~$7/month for basic instance
 
 ## Premium Features
 All premium features bypassed - app is fully free:
@@ -256,53 +296,30 @@ All premium features bypassed - app is fully free:
 ## File Structure
 ```
 ChatStoryMaker/
-├── README.md                 <- App features documentation
-├── CLAUDE.md                 <- Technical reference (this file)
-├── CLAUDE-CODE-SETUP.md      <- Original setup instructions
-├── CLAUDE-CODE-PROMPTS.md    <- Development prompts
-├── server/                   <- Python server for cloud rendering
-│   ├── main.py               <- FastAPI server with /render, /status, /download
-│   ├── renderer.py           <- Video rendering engine (iMessage styling)
-│   ├── models.py             <- Pydantic models for API
+├── CLAUDE.md                 <- This file (technical reference)
+├── server/
+│   ├── main.py               <- FastAPI server
+│   ├── renderer.py           <- Video rendering engine
+│   ├── ai_service.py         <- AI generation (OpenAI/Claude)
+│   ├── models.py             <- Pydantic models
 │   ├── requirements.txt      <- Python dependencies
-│   ├── render.yaml           <- Render.com deployment config
-│   ├── README.md             <- Server documentation
-│   └── assets/               <- Sound effect files
-│       ├── send.mp3          <- Sound for sent messages
-│       └── receive.mp3       <- Sound for received messages
+│   ├── .env.example          <- Environment template
+│   └── assets/
+│       ├── send.mp3
+│       └── receive.mp3
 └── ios/
     ├── ChatStoryMaker.xcodeproj
     └── ChatStoryMaker/
         ├── ChatStoryMakerApp.swift
         ├── ContentView.swift
         ├── Models/
-        │   ├── Conversation.swift
-        │   ├── Character.swift
-        │   ├── Message.swift
-        │   ├── MessageType.swift
-        │   ├── Folder.swift
-        │   ├── Theme.swift
-        │   ├── ExportSettings.swift
-        │   └── ExportHistory.swift
         ├── Views/
         │   ├── Home/
         │   ├── Editor/
         │   ├── Export/
         │   ├── AI/
-        │   │   └── AIGeneratorView.swift
         │   └── Setup/
         ├── ViewModels/
-        │   ├── ConversationViewModel.swift
-        │   ├── ChatEditorViewModel.swift
-        │   ├── ExportViewModel.swift
-        │   ├── AIGeneratorViewModel.swift
-        │   └── SettingsViewModel.swift
         ├── Services/
-        │   ├── VideoExportService.swift
-        │   ├── ServerExportService.swift
-        │   ├── ImageExportService.swift
-        │   ├── AudioService.swift
-        │   ├── AIService.swift
-        │   └── PurchaseService.swift
         └── Utilities/
 ```

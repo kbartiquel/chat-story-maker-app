@@ -115,6 +115,12 @@ class ExportViewModel {
             errorMessage = nil
         }
 
+        AnalyticsService.shared.trackExportStarted(
+            format: "video",
+            aspectRatio: settings.format.rawValue,
+            isDarkMode: settings.darkMode
+        )
+
         await performVideoExport()
     }
 
@@ -189,10 +195,12 @@ class ExportViewModel {
             showShareSheet = true
             lastExportHistory = createExportHistory(localPath: url.path)
             HapticManager.notification(.success)
+            AnalyticsService.shared.trackExportCompleted(format: "video", durationSeconds: 0)
         } catch {
             errorMessage = error.localizedDescription
             isExporting = false
             HapticManager.notification(.error)
+            AnalyticsService.shared.trackExportFailed(format: "video", error: error.localizedDescription)
         }
     }
 
@@ -215,12 +223,14 @@ class ExportViewModel {
                 self.showShareSheet = true
                 self.lastExportHistory = self.createExportHistory(videoURL: url, localPath: url.path)
                 HapticManager.notification(.success)
+                AnalyticsService.shared.trackExportCompleted(format: "video", durationSeconds: 0)
             }
         } catch {
             await MainActor.run {
                 self.errorMessage = error.localizedDescription
                 self.isExporting = false
                 HapticManager.notification(.error)
+                AnalyticsService.shared.trackExportFailed(format: "video", error: error.localizedDescription)
             }
         }
     }
@@ -233,6 +243,12 @@ class ExportViewModel {
             exportProgress = 0
             errorMessage = nil
         }
+
+        AnalyticsService.shared.trackExportStarted(
+            format: "screenshot",
+            aspectRatio: settings.format.rawValue,
+            isDarkMode: settings.darkMode
+        )
 
         await performScreenshotExport()
     }
@@ -258,6 +274,7 @@ class ExportViewModel {
             self.isExporting = false
             self.showShareSheet = true
             HapticManager.notification(.success)
+            AnalyticsService.shared.trackExportCompleted(format: "screenshot", durationSeconds: 0)
         }
     }
 }

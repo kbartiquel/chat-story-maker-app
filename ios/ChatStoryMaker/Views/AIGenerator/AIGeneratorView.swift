@@ -15,55 +15,36 @@ struct AIGeneratorView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    // Header
-                    VStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 50))
-                            .foregroundColor(.purple)
-                        Text("AI Story Generator")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        Text("Enter a prompt and let AI create your chat story")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.top)
+                VStack(spacing: 20) {
+                    // Prompt Section
+                    PromptInputView(prompt: $viewModel.prompt)
 
-                    // Prompt input
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Story Prompt")
-                            .font(.headline)
-                        TextEditor(text: $viewModel.prompt)
-                            .frame(minHeight: 100)
-                            .padding(8)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color(.systemGray4), lineWidth: 1)
-                            )
-                        Text("e.g., \"Two friends planning a surprise birthday party\"")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                    // Chat Type
+                    CharacterCountPickerView(numCharacters: $viewModel.numCharacters)
 
-                    // Genre picker
-                    GenrePickerView(selectedGenre: $viewModel.selectedGenre)
+                    // Genre
+                    GenrePickerView(
+                        selectedGenre: $viewModel.selectedGenre,
+                        customGenre: $viewModel.customGenre
+                    )
 
-                    // Mood picker
-                    MoodPickerView(selectedMood: $viewModel.selectedMood)
+                    // Mood
+                    MoodPickerView(
+                        selectedMood: $viewModel.selectedMood,
+                        customMood: $viewModel.customMood
+                    )
 
-                    // Length picker
+                    // Length
                     LengthPickerView(selectedLength: $viewModel.selectedLength)
 
                     // Generate button
                     generateButton
+                        .padding(.top, 8)
                 }
                 .padding()
             }
-            .navigationTitle("AI Generate")
+            .navigationTitle("Create Story")
+            .navigationBarTitleDisplayMode(.large)
             .navigationDestination(isPresented: $viewModel.showingEditor) {
                 if let conversation = viewModel.generatedConversation {
                     ChatEditorView(conversation: conversation)
@@ -87,104 +68,243 @@ struct AIGeneratorView: View {
         Button(action: {
             Task { await viewModel.generateStory() }
         }) {
-            Group {
+            HStack(spacing: 10) {
                 if viewModel.isGenerating {
-                    HStack(spacing: 12) {
-                        ProgressView()
-                            .tint(.white)
-                        Text("Generating...")
-                    }
+                    ProgressView()
+                        .tint(.white)
+                    Text("Generating...")
                 } else {
-                    Label("Generate Story", systemImage: "sparkles")
+                    Image(systemName: "sparkles")
+                    Text("Generate")
                 }
             }
             .font(.headline)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(viewModel.canGenerate ? Color.purple : Color.gray)
-            .cornerRadius(12)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(viewModel.canGenerate ? Color.purple : Color.gray)
+            )
         }
         .disabled(!viewModel.canGenerate)
     }
 }
 
-struct GenrePickerView: View {
-    @Binding var selectedGenre: AIService.Genre
+// MARK: - Prompt Input
+
+struct PromptInputView: View {
+    @Binding var prompt: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text("What's your story about?")
+                .font(.headline)
+
+            TextField("Describe your story idea...", text: $prompt, axis: .vertical)
+                .lineLimit(3...6)
+                .padding(12)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+
+            Text("Be specific for better results")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
+// MARK: - Chat Type Picker
+
+struct CharacterCountPickerView: View {
+    @Binding var numCharacters: Int
+
+    private var isGroupChat: Bool {
+        numCharacters > 2
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Chat Type")
+                .font(.headline)
+
+            HStack(spacing: 10) {
+                ChatTypeButton(
+                    title: "1-on-1",
+                    icon: "person.2.fill",
+                    isSelected: !isGroupChat
+                ) {
+                    numCharacters = 2
+                }
+
+                ChatTypeButton(
+                    title: "Group",
+                    icon: "person.3.fill",
+                    isSelected: isGroupChat
+                ) {
+                    if numCharacters < 3 {
+                        numCharacters = 3
+                    }
+                }
+            }
+
+            if isGroupChat {
+                HStack {
+                    Text("\(numCharacters) people")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.purple)
+                        .frame(width: 80, alignment: .leading)
+
+                    Slider(
+                        value: Binding(
+                            get: { Double(numCharacters) },
+                            set: { numCharacters = Int($0) }
+                        ),
+                        in: 3...10,
+                        step: 1
+                    )
+                    .tint(.purple)
+                }
+                .padding(.horizontal, 4)
+                .padding(.top, 4)
+            }
+        }
+    }
+}
+
+struct ChatTypeButton: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.body)
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(isSelected ? .semibold : .regular)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(isSelected ? Color.purple.opacity(0.12) : Color(.systemGray6))
+            .foregroundColor(isSelected ? .purple : .primary)
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color.purple.opacity(0.5) : Color.clear, lineWidth: 1.5)
+            )
+        }
+    }
+}
+
+// MARK: - Genre Picker
+
+struct GenrePickerView: View {
+    @Binding var selectedGenre: AIService.Genre?
+    @Binding var customGenre: String
+    @State private var showCustomInput = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
             Text("Genre")
                 .font(.headline)
+
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     ForEach(AIService.Genre.allCases, id: \.self) { genre in
                         ChipButton(
-                            title: genre.rawValue,
-                            icon: genreIcon(genre),
-                            isSelected: selectedGenre == genre,
+                            title: genre.displayName,
+                            isSelected: selectedGenre == genre && !showCustomInput,
                             color: .blue
                         ) {
                             selectedGenre = genre
+                            showCustomInput = false
+                            customGenre = ""
                         }
+                    }
+
+                    // Custom option
+                    ChipButton(
+                        title: "Custom",
+                        isSelected: showCustomInput,
+                        color: .blue
+                    ) {
+                        showCustomInput = true
+                        selectedGenre = nil
                     }
                 }
             }
-        }
-    }
 
-    private func genreIcon(_ genre: AIService.Genre) -> String {
-        switch genre {
-        case .drama: return "theatermasks.fill"
-        case .comedy: return "face.smiling.fill"
-        case .romance: return "heart.fill"
-        case .horror: return "bolt.fill"
-        case .mystery: return "magnifyingglass"
+            if showCustomInput {
+                TextField("Enter custom genre...", text: $customGenre)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.subheadline)
+            }
         }
     }
 }
 
+// MARK: - Mood Picker
+
 struct MoodPickerView: View {
-    @Binding var selectedMood: AIService.Mood
+    @Binding var selectedMood: AIService.Mood?
+    @Binding var customMood: String
+    @State private var showCustomInput = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("Mood")
                 .font(.headline)
+
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     ForEach(AIService.Mood.allCases, id: \.self) { mood in
                         ChipButton(
-                            title: mood.rawValue,
-                            icon: moodIcon(mood),
-                            isSelected: selectedMood == mood,
+                            title: mood.displayName,
+                            isSelected: selectedMood == mood && !showCustomInput,
                             color: .orange
                         ) {
                             selectedMood = mood
+                            showCustomInput = false
+                            customMood = ""
                         }
+                    }
+
+                    // Custom option
+                    ChipButton(
+                        title: "Custom",
+                        isSelected: showCustomInput,
+                        color: .orange
+                    ) {
+                        showCustomInput = true
+                        selectedMood = nil
                     }
                 }
             }
-        }
-    }
 
-    private func moodIcon(_ mood: AIService.Mood) -> String {
-        switch mood {
-        case .funny: return "face.smiling"
-        case .dramatic: return "exclamationmark.triangle"
-        case .scary: return "eye.fill"
-        case .romantic: return "heart.circle"
+            if showCustomInput {
+                TextField("Enter custom mood...", text: $customMood)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.subheadline)
+            }
         }
     }
 }
+
+// MARK: - Length Picker
 
 struct LengthPickerView: View {
     @Binding var selectedLength: AIService.MessageLength
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("Length")
                 .font(.headline)
+
             Picker("Length", selection: $selectedLength) {
                 ForEach(AIService.MessageLength.allCases, id: \.self) { length in
                     Text(length.displayName).tag(length)
@@ -195,30 +315,27 @@ struct LengthPickerView: View {
     }
 }
 
+// MARK: - Chip Button
+
 struct ChipButton: View {
     let title: String
-    let icon: String
     let isSelected: Bool
     let color: Color
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.caption)
-                Text(title)
-                    .font(.subheadline)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(isSelected ? color.opacity(0.2) : Color(.systemGray6))
-            .foregroundColor(isSelected ? color : .primary)
-            .cornerRadius(20)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(isSelected ? color : Color.clear, lineWidth: 2)
-            )
+            Text(title)
+                .font(.subheadline)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(isSelected ? color.opacity(0.15) : Color(.systemGray6))
+                .foregroundColor(isSelected ? color : .primary)
+                .cornerRadius(18)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(isSelected ? color.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                )
         }
     }
 }

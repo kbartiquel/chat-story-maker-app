@@ -18,7 +18,7 @@ struct ContentView: View {
 
             AIGeneratorView()
                 .tabItem {
-                    Label("AI Generate", systemImage: "sparkles")
+                    Label("Generate", systemImage: "sparkles")
                 }
 
             ExportHistoryTabView()

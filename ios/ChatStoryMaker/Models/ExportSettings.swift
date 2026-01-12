@@ -22,8 +22,8 @@ struct ExportSettings {
     var showReactions: Bool = true
     var imageQuality: ImageQuality = .high
 
-    // Render mode (device or server)
-    var renderMode: RenderMode = .device
+    // Render mode - always use server/cloud for better quality and emoji support
+    var renderMode: RenderMode = .server
 }
 
 enum RenderMode: String, CaseIterable {

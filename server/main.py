@@ -16,8 +16,12 @@ from fastapi.responses import FileResponse
 import cloudinary
 import cloudinary.uploader
 
-from models import RenderRequest, JobResponse, JobStatus
+from models import (
+    RenderRequest, JobResponse, JobStatus,
+    GenerateStoryRequest, GenerateStoryResponse, AIServiceStatus
+)
 from renderer import VideoRenderer
+from ai_service import generate_chat_story, get_ai_service_status, AIServiceError
 
 # Initialize FastAPI
 app = FastAPI(
@@ -82,6 +86,51 @@ async def health():
     """Health check for uptime monitoring."""
     return {"status": "healthy"}
 
+
+# ===========================================
+# AI Story Generation Endpoints
+# ===========================================
+
+@app.get("/ai-status", response_model=AIServiceStatus)
+async def ai_status():
+    """Get AI service configuration status."""
+    return get_ai_service_status()
+
+
+@app.post("/generate", response_model=GenerateStoryResponse)
+async def generate_story(request: GenerateStoryRequest):
+    """
+    Generate a chat story conversation using AI.
+
+    Uses either OpenAI GPT or Anthropic Claude based on AI_SERVICE env var.
+    """
+    try:
+        result = generate_chat_story(
+            topic=request.topic,
+            num_messages=request.num_messages,
+            genre=request.genre,
+            mood=request.mood,
+            num_characters=request.num_characters,
+            character_names=request.character_names
+        )
+
+        return GenerateStoryResponse(
+            title=result["title"],
+            group_name=result.get("group_name"),
+            characters=result["characters"],
+            messages=result["messages"]
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except AIServiceError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+
+
+# ===========================================
+# Video Rendering Endpoints
+# ===========================================
 
 @app.post("/render", response_model=JobResponse)
 async def start_render(request: RenderRequest, background_tasks: BackgroundTasks):

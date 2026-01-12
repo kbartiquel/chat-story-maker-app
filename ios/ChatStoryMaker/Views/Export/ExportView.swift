@@ -281,21 +281,6 @@ struct ExportSettingsSection: View {
                 .font(.headline)
 
             if settings.exportType == .video {
-                // Render mode picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Render Mode")
-                        .font(.subheadline)
-                    Picker("Mode", selection: $settings.renderMode) {
-                        ForEach(RenderMode.allCases, id: \.self) { mode in
-                            Text(mode.displayName).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    Text(settings.renderMode.description)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
                 // Video-specific settings
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Typing Speed")

@@ -6,7 +6,7 @@
 #
 
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from enum import Enum
 
 
@@ -82,3 +82,67 @@ class JobResponse(BaseModel):
     progress: float = 0.0
     video_url: Optional[str] = None
     error: Optional[str] = None
+
+
+# ===========================================
+# AI Generation Models
+# ===========================================
+
+class StoryGenre(str, Enum):
+    romance = "romance"
+    horror = "horror"
+    comedy = "comedy"
+    drama = "drama"
+    mystery = "mystery"
+    thriller = "thriller"
+    friendship = "friendship"
+    family = "family"
+
+
+class StoryMood(str, Enum):
+    happy = "happy"
+    sad = "sad"
+    tense = "tense"
+    funny = "funny"
+    romantic = "romantic"
+    scary = "scary"
+    dramatic = "dramatic"
+    casual = "casual"
+
+
+class GenerateStoryRequest(BaseModel):
+    topic: str
+    num_messages: int = 15
+    genre: str = "drama"        # Can be preset or custom string
+    mood: str = "dramatic"      # Can be preset or custom string
+    num_characters: int = 2
+    character_names: Optional[List[str]] = None
+
+
+class GeneratedCharacter(BaseModel):
+    id: str
+    name: str
+    is_me: bool
+    suggested_color: str
+    suggested_emoji: Optional[str] = None
+
+
+class GeneratedMessage(BaseModel):
+    id: str
+    character_id: str
+    text: str
+
+
+class GenerateStoryResponse(BaseModel):
+    title: str
+    group_name: Optional[str] = None  # Realistic group chat name for groups (3+ characters)
+    characters: List[GeneratedCharacter]
+    messages: List[GeneratedMessage]
+
+
+class AIServiceStatus(BaseModel):
+    configured_service: str
+    openai_configured: bool
+    anthropic_configured: bool
+    openai_model: str
+    anthropic_model: str

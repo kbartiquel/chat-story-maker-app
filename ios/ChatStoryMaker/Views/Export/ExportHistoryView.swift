@@ -70,13 +70,26 @@ struct ExportHistoryView: View {
     private var historyList: some View {
         List {
             ForEach(history) { item in
-                ExportHistoryRow(item: item) {
-                    playVideo(item)
-                } onShare: {
-                    shareVideo(item)
-                }
+                ExportHistoryRow(item: item)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        playVideo(item)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            deleteItem(item)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+
+                        Button {
+                            shareVideo(item)
+                        } label: {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+                        .tint(.blue)
+                    }
             }
-            .onDelete(perform: deleteItems)
         }
         .listStyle(.plain)
     }
@@ -115,15 +128,11 @@ struct ExportHistoryView: View {
         }
     }
 
-    private func deleteItems(at offsets: IndexSet) {
-        for index in offsets {
-            let item = history[index]
-            // Delete local file if exists
-            if let localPath = item.localPath {
-                try? FileManager.default.removeItem(atPath: localPath)
-            }
-            modelContext.delete(item)
+    private func deleteItem(_ item: ExportHistory) {
+        if let localPath = item.localPath {
+            try? FileManager.default.removeItem(atPath: localPath)
         }
+        modelContext.delete(item)
     }
 
     private func clearAllHistory() {
@@ -136,17 +145,29 @@ struct ExportHistoryView: View {
     }
 }
 
+// MARK: - Export History Row (Clean, no buttons)
+
 struct ExportHistoryRow: View {
     let item: ExportHistory
-    let onPlay: () -> Void
-    let onShare: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
-            // Thumbnail
-            thumbnailView
-                .frame(width: 60, height: 80)
-                .cornerRadius(8)
+            // Thumbnail with play overlay
+            ZStack {
+                thumbnailView
+                    .frame(width: 60, height: 80)
+                    .cornerRadius(8)
+
+                // Play icon overlay
+                if item.exportTypeEnum == .video {
+                    Image(systemName: "play.fill")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .padding(8)
+                        .background(Color.black.opacity(0.5))
+                        .clipShape(Circle())
+                }
+            }
 
             // Info
             VStack(alignment: .leading, spacing: 4) {
@@ -154,38 +175,25 @@ struct ExportHistoryRow: View {
                     .font(.headline)
                     .lineLimit(1)
 
-                HStack(spacing: 8) {
-                    Label(item.exportTypeEnum.displayName, systemImage: item.exportTypeEnum.icon)
-                    Text("•")
+                HStack(spacing: 6) {
                     Text(item.formatEnum.displayName)
+                    Text("•")
+                    Text("\(item.messageCount) messages")
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)
 
-                HStack(spacing: 8) {
-                    Image(systemName: item.renderModeEnum == .server ? "cloud" : "iphone")
-                    Text(item.formattedDate)
-                }
-                .font(.caption2)
-                .foregroundColor(.secondary)
+                Text(item.formattedDate)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
 
             Spacer()
 
-            // Actions
-            VStack(spacing: 8) {
-                Button(action: onPlay) {
-                    Image(systemName: "play.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.blue)
-                }
-
-                Button(action: onShare) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.subheadline)
-                        .foregroundColor(.blue)
-                }
-            }
+            // Chevron indicator
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
         .padding(.vertical, 4)
     }
@@ -208,6 +216,50 @@ struct ExportHistoryRow: View {
     }
 }
 
+// MARK: - Full Screen Video Player
+
+struct FullScreenVideoPlayer: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+    @State private var player: AVPlayer?
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if let player = player {
+                VideoPlayer(player: player)
+                    .ignoresSafeArea()
+            }
+
+            // Close button
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(.white.opacity(0.8))
+                            .padding()
+                    }
+                }
+                Spacer()
+            }
+        }
+        .onAppear {
+            player = AVPlayer(url: url)
+            player?.play()
+        }
+        .onDisappear {
+            player?.pause()
+            player = nil
+        }
+    }
+}
+
+// Keep the old VideoPlayerView for compatibility
 struct VideoPlayerView: View {
     let url: URL
     @Environment(\.dismiss) private var dismiss
@@ -289,13 +341,26 @@ struct ExportHistoryTabView: View {
     private var historyList: some View {
         List {
             ForEach(history) { item in
-                ExportHistoryRow(item: item) {
-                    playVideo(item)
-                } onShare: {
-                    shareVideo(item)
-                }
+                ExportHistoryRow(item: item)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        playVideo(item)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            deleteItem(item)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+
+                        Button {
+                            shareVideo(item)
+                        } label: {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+                        .tint(.blue)
+                    }
             }
-            .onDelete(perform: deleteItems)
         }
         .listStyle(.plain)
     }
@@ -334,14 +399,11 @@ struct ExportHistoryTabView: View {
         }
     }
 
-    private func deleteItems(at offsets: IndexSet) {
-        for index in offsets {
-            let item = history[index]
-            if let localPath = item.localPath {
-                try? FileManager.default.removeItem(atPath: localPath)
-            }
-            modelContext.delete(item)
+    private func deleteItem(_ item: ExportHistory) {
+        if let localPath = item.localPath {
+            try? FileManager.default.removeItem(atPath: localPath)
         }
+        modelContext.delete(item)
     }
 
     private func clearAllHistory() {

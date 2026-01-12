@@ -684,8 +684,10 @@ class VideoExportService {
         let nameY = avatarY + avatarSize + 4 * scale
         name.draw(at: CGPoint(x: nameX, y: nameY), withAttributes: nameAttrs)
 
-        // Video icon (right)
-        drawVideoIcon(at: CGPoint(x: canvasWidth - 35 * scale, y: headerHeight / 2 - 10 * scale), color: blueColor, context: context, scale: scale)
+        // Video icon (right) - only for 1:1 chats, not group chats
+        if !config.isGroupChat {
+            drawVideoIcon(at: CGPoint(x: canvasWidth - 35 * scale, y: headerHeight / 2 - 10 * scale), color: blueColor, context: context, scale: scale)
+        }
     }
 
     private func drawHeaderBar(
@@ -751,13 +753,12 @@ class VideoExportService {
         let smallChevronAttrs: [NSAttributedString.Key: Any] = [.font: smallChevronFont, .foregroundColor: UIColor.systemGray]
         ">".draw(at: CGPoint(x: nameX + nameSize.width + 4, y: nameY + 4), withAttributes: smallChevronAttrs)
 
-        // Video icon (right)
-        let videoIconX = canvasWidth - 60
-        let videoIconY: CGFloat = 85
-        let videoFont = UIFont.systemFont(ofSize: 36, weight: .regular)
-        let videoAttrs: [NSAttributedString.Key: Any] = [.font: videoFont, .foregroundColor: blueColor]
-        // Using a simple representation for video icon
-        drawVideoIcon(at: CGPoint(x: videoIconX, y: videoIconY), color: blueColor, context: context)
+        // Video icon (right) - only for 1:1 chats, not group chats
+        if !config.isGroupChat {
+            let videoIconX = canvasWidth - 60
+            let videoIconY: CGFloat = 85
+            drawVideoIcon(at: CGPoint(x: videoIconX, y: videoIconY), color: blueColor, context: context)
+        }
 
         return headerHeight
     }

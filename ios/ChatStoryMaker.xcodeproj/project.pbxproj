@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		420A0AC72F152339009BEA22 /* Aptabase in Frameworks */ = {isa = PBXBuildFile; productRef = 420A0AC62F152339009BEA22 /* Aptabase */; };
+		420A0AC92F152383009BEA22 /* Aptabase in Frameworks */ = {isa = PBXBuildFile; productRef = 420A0AC82F152383009BEA22 /* Aptabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		42F981F22ECD7E2200D5EE31 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				420A0AC72F152339009BEA22 /* Aptabase in Frameworks */,
+				420A0AC92F152383009BEA22 /* Aptabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -120,6 +127,8 @@
 			);
 			name = ChatStoryMaker;
 			packageProductDependencies = (
+				420A0AC62F152339009BEA22 /* Aptabase */,
+				420A0AC82F152383009BEA22 /* Aptabase */,
 			);
 			productName = ChatStoryMaker;
 			productReference = 42F981E22ECD7E2000D5EE31 /* ChatStoryMaker.app */;
@@ -204,6 +213,7 @@
 			mainGroup = 42F981D92ECD7E2000D5EE31;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				420A0AC52F152316009BEA22 /* XCRemoteSwiftPackageReference "aptabase-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 42F981E32ECD7E2000D5EE31 /* Products */;
@@ -635,6 +645,29 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		420A0AC52F152316009BEA22 /* XCRemoteSwiftPackageReference "aptabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/aptabase/aptabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.11;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		420A0AC62F152339009BEA22 /* Aptabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Aptabase;
+		};
+		420A0AC82F152383009BEA22 /* Aptabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 420A0AC52F152316009BEA22 /* XCRemoteSwiftPackageReference "aptabase-swift" */;
+			productName = Aptabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 42F981DA2ECD7E2000D5EE31 /* Project object */;
 }

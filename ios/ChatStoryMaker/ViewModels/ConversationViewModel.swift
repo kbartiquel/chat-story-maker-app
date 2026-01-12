@@ -106,6 +106,7 @@ class ConversationViewModel {
         modelContext.insert(conversation)
         saveContext()
         fetchConversations()
+        AnalyticsService.shared.trackConversationCreated(isGroupChat: isGroupChat, characterCount: conversation.characters.count)
     }
 
     func deleteConversation(_ conversation: Conversation) {
@@ -113,6 +114,7 @@ class ConversationViewModel {
         modelContext.delete(conversation)
         saveContext()
         fetchConversations()
+        AnalyticsService.shared.trackConversationDeleted()
     }
 
     func deleteConversations(at offsets: IndexSet) {
@@ -170,6 +172,7 @@ class ConversationViewModel {
         saveContext()
         fetchConversations()
         HapticManager.impact(.medium)
+        AnalyticsService.shared.trackConversationDuplicated()
     }
 
     // MARK: - Folders
@@ -194,6 +197,7 @@ class ConversationViewModel {
         saveContext()
         fetchFolders()
         HapticManager.impact(.light)
+        AnalyticsService.shared.trackFolderCreated()
     }
 
     func updateFolder(_ folder: Folder, name: String, colorHex: String) {
@@ -213,6 +217,7 @@ class ConversationViewModel {
         saveContext()
         fetchFolders()
         fetchConversations()
+        AnalyticsService.shared.trackFolderDeleted()
     }
 
     func moveConversation(_ conversation: Conversation, to folder: Folder?) {
