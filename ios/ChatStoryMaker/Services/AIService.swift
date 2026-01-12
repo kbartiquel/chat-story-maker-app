@@ -1,6 +1,6 @@
 //
 //  AIService.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Server API integration for AI story generation
 //

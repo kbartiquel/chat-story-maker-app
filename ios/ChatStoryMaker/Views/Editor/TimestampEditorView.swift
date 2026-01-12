@@ -1,6 +1,6 @@
 //
 //  TimestampEditorView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Edit message timestamp for storytelling
 //
@@ -43,7 +43,7 @@ struct TimestampEditorView: View {
                             displayTime = nil
                             HapticManager.selection()
                         }
-                        .foregroundColor(.blue)
+                        .foregroundColor(.accentColor)
                     }
 
                     Section("Preview") {

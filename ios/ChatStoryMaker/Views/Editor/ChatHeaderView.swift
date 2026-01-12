@@ -1,6 +1,6 @@
 //
 //  ChatHeaderView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  iMessage-style chat header with contact/group info
 //
@@ -51,11 +51,11 @@ struct ChatHeaderView: View {
     // MARK: - Group Chat Header
 
     private var groupHeader: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             // Stacked avatars for group
             HStack(spacing: -12) {
                 ForEach(participants.prefix(4)) { participant in
-                    contactAvatar(participant, size: 40)
+                    contactAvatar(participant, size: 36)
                         .overlay(
                             Circle()
                                 .stroke(Color(.systemBackground), lineWidth: 2)
@@ -63,15 +63,37 @@ struct ChatHeaderView: View {
                 }
             }
 
-            // Group name
-            Text(conversation.title)
-                .font(.headline)
-                .fontWeight(.semibold)
+            // Group name (if set and not default)
+            let hasGroupName = !conversation.title.isEmpty &&
+                conversation.title != "Chat" &&
+                conversation.title != "Group Chat"
 
-            // Member count
-            Text("\(participants.count + 1) people")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            if hasGroupName {
+                // Group name (bold)
+                HStack(spacing: 2) {
+                    Text(conversation.title)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+
+                // Member count (gray, smaller)
+                Text("\(characters.count) People")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                // No group name - just show people count as main text
+                HStack(spacing: 2) {
+                    Text("\(characters.count) People")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+            }
         }
     }
 

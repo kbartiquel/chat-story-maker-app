@@ -1,6 +1,6 @@
 //
 //  Constants.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  App-wide constants and configuration
 //

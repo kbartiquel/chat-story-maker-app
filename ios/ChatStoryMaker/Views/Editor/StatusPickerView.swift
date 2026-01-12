@@ -1,6 +1,6 @@
 //
 //  StatusPickerView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Pick delivery status for a message
 //
@@ -35,7 +35,7 @@ struct StatusPickerView: View {
 
                             if status == statusOption {
                                 Image(systemName: "checkmark")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.accentColor)
                             }
                         }
                     }

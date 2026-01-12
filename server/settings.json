@@ -1,0 +1,12 @@
+{
+  "videoExportLimit": 3,
+  "aiGenerationLimit": 5,
+  "hardPaywall": false,
+  "paywallCloseButtonDelay": 3,
+  "paywallCloseButtonDelayOnLimit": 5,
+  "showPaywallOnStart": true,
+  "paywallMonthly": false,
+  "paywallWeekly": true,
+  "paywallLifetime": true,
+  "paywallYearly": false
+}

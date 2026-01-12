@@ -1,6 +1,6 @@
 //
 //  CardView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  White background card with rounded corners and shadow
 //

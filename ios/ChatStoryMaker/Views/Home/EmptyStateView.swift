@@ -1,6 +1,6 @@
 //
 //  EmptyStateView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Empty state UI when no conversations exist
 //
@@ -35,7 +35,7 @@ struct EmptyStateView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
+                    .background(Color.accentColor)
                     .cornerRadius(12)
             }
             .padding(.horizontal, 40)

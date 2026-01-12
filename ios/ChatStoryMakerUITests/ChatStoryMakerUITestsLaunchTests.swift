@@ -1,6 +1,6 @@
 //
-//  ChatStoryMakerUITestsLaunchTests.swift
-//  ChatStoryMakerUITests
+//  TextoryUITestsLaunchTests.swift
+//  TextoryUITests
 //
 
 import XCTest

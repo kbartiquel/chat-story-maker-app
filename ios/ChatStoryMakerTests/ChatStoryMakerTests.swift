@@ -1,6 +1,6 @@
 //
-//  ChatStoryMakerTests.swift
-//  ChatStoryMakerTests
+//  TextoryTests.swift
+//  TextoryTests
 //
 
 import Testing

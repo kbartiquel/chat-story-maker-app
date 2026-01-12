@@ -1,6 +1,6 @@
 //
-//  ChatStoryMakerApp.swift
-//  ChatStoryMaker
+//  TextoryApp.swift
+//  Textory
 //
 //  Created with Claude Code
 //  Copyright © 2024 KimBytes. All rights reserved.
@@ -11,7 +11,7 @@ import SwiftData
 import Aptabase
 
 @main
-struct ChatStoryMakerApp: App {
+struct TextoryApp: App {
     let container: ModelContainer
 
     init() {

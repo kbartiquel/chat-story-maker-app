@@ -1,6 +1,6 @@
 //
 //  ExportView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Export settings screen with video/screenshot preview
 //
@@ -23,6 +23,11 @@ struct ExportView: View {
             ZStack {
                 ScrollView {
                     VStack(spacing: 24) {
+                        // Credits badge (only for video exports, non-premium users)
+                        if viewModel.settings.exportType == .video && !viewModel.isPremium {
+                            creditsBadge
+                        }
+
                         // Export type picker
                         ExportTypePickerView(selectedType: $viewModel.settings.exportType)
 
@@ -38,7 +43,10 @@ struct ExportView: View {
                         }
 
                         // Settings
-                        ExportSettingsSection(settings: $viewModel.settings)
+                        ExportSettingsSection(
+                            settings: $viewModel.settings,
+                            messages: viewModel.conversation.sortedMessages
+                        )
 
                         // Export button
                         exportButton
@@ -93,6 +101,31 @@ struct ExportView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "Unknown error")
             }
+            .fullScreenCover(isPresented: $viewModel.showPaywall) {
+                PaywallView(isLimitTriggered: true)
+            }
+        }
+    }
+
+    private var creditsBadge: some View {
+        Button {
+            viewModel.showPaywall = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "film")
+                    .font(.system(size: 14))
+                Text("\(viewModel.remainingVideoExports) exports left")
+                    .font(.system(size: 14, weight: .medium))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+            }
+            .foregroundColor(viewModel.remainingVideoExports > 0 ? .accentColor : .red)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(viewModel.remainingVideoExports > 0 ? Color.accentColor.opacity(0.1) : Color.red.opacity(0.1))
+            )
         }
     }
 
@@ -132,7 +165,7 @@ struct ExportView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(viewModel.canExport ? Color.blue : Color.gray)
+            .background(viewModel.canExport ? Color.accentColor : Color.gray)
             .cornerRadius(12)
         }
         .disabled(!viewModel.canExport)
@@ -162,12 +195,12 @@ struct ExportTypePickerView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .background(selectedType == type ? Color.blue.opacity(0.1) : Color(.systemGray6))
-                        .foregroundColor(selectedType == type ? .blue : .primary)
+                        .background(selectedType == type ? Color.accentColor.opacity(0.1) : Color(.systemGray6))
+                        .foregroundColor(selectedType == type ? .accentColor : .primary)
                         .cornerRadius(10)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(selectedType == type ? Color.blue : Color.clear, lineWidth: 2)
+                                .stroke(selectedType == type ? Color.accentColor : Color.clear, lineWidth: 2)
                         )
                     }
                 }
@@ -180,41 +213,209 @@ struct VideoPreviewView: View {
     let conversation: Conversation
     let settings: ExportSettings
 
+    private var mainContact: Character? {
+        conversation.characters.first { !$0.isMe }
+    }
+
+    private var participants: [Character] {
+        conversation.characters.filter { !$0.isMe }
+    }
+
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(settings.darkMode ? Color.black : conversation.theme.backgroundColor)
-                .aspectRatio(aspectRatio, contentMode: .fit)
+            RoundedRectangle(cornerRadius: 24)
+                .fill(settings.darkMode ? Color.black : Color.white)
+                .aspectRatio(settings.exportType == .screenshot ? 9/16 : aspectRatio, contentMode: .fit)
                 .overlay(
-                    VStack(spacing: 8) {
-                        ForEach(conversation.sortedMessages.prefix(3)) { message in
-                            let character = conversation.characters.first { $0.id == message.characterID }
-                            let isMe = character?.isMe ?? true
-                            HStack {
-                                if isMe { Spacer() }
-                                Text(message.text)
-                                    .font(.caption)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(isMe ? conversation.theme.senderBubbleColor : conversation.theme.receiverBubbleColor)
-                                    .foregroundColor(isMe ? conversation.theme.senderTextColor : conversation.theme.receiverTextColor)
-                                    .cornerRadius(12)
-                                if !isMe { Spacer() }
+                    VStack(spacing: 0) {
+                        // iMessage-style header
+                        previewHeader
+                            .padding(.bottom, 8)
+
+                        Divider()
+
+                        // iMessage label
+                        Text("iMessage")
+                            .font(.system(size: 10))
+                            .foregroundColor(.gray)
+                            .padding(.top, 6)
+
+                        // Messages
+                        VStack(spacing: 6) {
+                            ForEach(conversation.sortedMessages.prefix(4)) { message in
+                                let character = conversation.characters.first { $0.id == message.characterID }
+                                let isMe = character?.isMe ?? true
+                                HStack(alignment: .bottom, spacing: 6) {
+                                    if isMe { Spacer(minLength: 40) }
+
+                                    // Avatar for received messages in group chat
+                                    if !isMe && conversation.isGroupChat {
+                                        Circle()
+                                            .fill(Color(hex: character?.colorHex ?? "#34C759"))
+                                            .frame(width: 20, height: 20)
+                                            .overlay(
+                                                Text(character?.avatarEmoji ?? String(character?.name.prefix(1) ?? "?"))
+                                                    .font(.system(size: character?.avatarEmoji != nil ? 10 : 8))
+                                                    .foregroundColor(.white)
+                                            )
+                                    }
+
+                                    Text(message.text)
+                                        .font(.system(size: 12))
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(isMe ? conversation.theme.senderBubbleColor : (settings.darkMode ? Color(white: 0.23) : conversation.theme.receiverBubbleColor))
+                                        .foregroundColor(isMe ? conversation.theme.senderTextColor : (settings.darkMode ? .white : conversation.theme.receiverTextColor))
+                                        .cornerRadius(16)
+                                        .lineLimit(2)
+
+                                    if !isMe { Spacer(minLength: 40) }
+                                }
+                            }
+                            if conversation.messages.count > 4 {
+                                Text("+ \(conversation.messages.count - 4) more")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
                             }
                         }
-                        if conversation.messages.count > 3 {
-                            Text("+ \(conversation.messages.count - 3) more messages")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
+                        .padding(.horizontal, 12)
+                        .padding(.top, 8)
+
+                        Spacer()
                     }
-                    .padding()
                 )
 
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 24)
                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
         }
-        .frame(height: 300)
+        .frame(height: 320)
+    }
+
+    @ViewBuilder
+    private var previewHeader: some View {
+        if conversation.isGroupChat {
+            // Group chat header with stacked avatars
+            groupPreviewHeader
+        } else {
+            // 1:1 chat header
+            contactPreviewHeader
+        }
+    }
+
+    @ViewBuilder
+    private var contactPreviewHeader: some View {
+        VStack(spacing: 2) {
+            // Avatar
+            previewAvatar(mainContact, size: 36)
+
+            // Name with chevron
+            HStack(spacing: 2) {
+                Text(mainContact?.name ?? conversation.title)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(settings.darkMode ? .white : .black)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundColor(.gray)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 8)
+        .overlay(alignment: .leading) {
+            // Back arrow
+            Image(systemName: "chevron.left")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.blue)
+                .padding(.leading, 12)
+                .padding(.top, 8)
+        }
+        .overlay(alignment: .trailing) {
+            // Video icon
+            Image(systemName: "video.fill")
+                .font(.system(size: 14))
+                .foregroundColor(.blue)
+                .padding(.trailing, 12)
+                .padding(.top, 8)
+        }
+    }
+
+    @ViewBuilder
+    private var groupPreviewHeader: some View {
+        let hasGroupName = !conversation.title.isEmpty &&
+            conversation.title != "Chat" &&
+            conversation.title != "Group Chat"
+
+        VStack(spacing: 2) {
+            // Stacked avatars
+            HStack(spacing: -8) {
+                ForEach(participants.prefix(4)) { participant in
+                    previewAvatar(participant, size: 28)
+                        .overlay(
+                            Circle()
+                                .stroke(settings.darkMode ? Color.black : Color.white, lineWidth: 1.5)
+                        )
+                }
+            }
+
+            if hasGroupName {
+                // Group name (bold)
+                HStack(spacing: 2) {
+                    Text(conversation.title)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(settings.darkMode ? .white : .black)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundColor(.gray)
+                }
+
+                // Member count (gray)
+                Text("\(conversation.characters.count) People")
+                    .font(.system(size: 9))
+                    .foregroundColor(.gray)
+            } else {
+                // Just people count
+                HStack(spacing: 2) {
+                    Text("\(conversation.characters.count) People")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(settings.darkMode ? .white : .black)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundColor(.gray)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 8)
+        .overlay(alignment: .leading) {
+            // Back arrow
+            Image(systemName: "chevron.left")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.blue)
+                .padding(.leading, 12)
+                .padding(.top, 8)
+        }
+    }
+
+    @ViewBuilder
+    private func previewAvatar(_ character: Character?, size: CGFloat) -> some View {
+        Circle()
+            .fill(Color(hex: character?.colorHex ?? "#007AFF"))
+            .frame(width: size, height: size)
+            .overlay(
+                Group {
+                    if let imageData = character?.avatarImageData, let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: size, height: size)
+                            .clipShape(Circle())
+                    } else {
+                        Text(character?.avatarEmoji ?? String(character?.name.prefix(1) ?? "?"))
+                            .font(.system(size: character?.avatarEmoji != nil ? size * 0.5 : size * 0.4))
+                            .foregroundColor(.white)
+                    }
+                }
+            )
     }
 
     private var aspectRatio: CGFloat {
@@ -261,12 +462,12 @@ struct FormatButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(isSelected ? Color.blue.opacity(0.1) : Color(.systemGray6))
-            .foregroundColor(isSelected ? .blue : .primary)
+            .background(isSelected ? Color.accentColor.opacity(0.1) : Color(.systemGray6))
+            .foregroundColor(isSelected ? .accentColor : .primary)
             .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
             )
         }
     }
@@ -274,6 +475,7 @@ struct FormatButton: View {
 
 struct ExportSettingsSection: View {
     @Binding var settings: ExportSettings
+    let messages: [Message]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -298,20 +500,39 @@ struct ExportSettingsSection: View {
                 Toggle("Sound Effects", isOn: $settings.enableSounds)
             } else {
                 // Screenshot-specific settings
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Image Quality")
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Screenshot Mode")
                         .font(.subheadline)
-                    Picker("Quality", selection: $settings.imageQuality) {
-                        ForEach(ImageQuality.allCases, id: \.self) { quality in
-                            Text(quality.displayName).tag(quality)
+                    HStack(spacing: 12) {
+                        ForEach(ScreenshotMode.allCases, id: \.self) { mode in
+                            Button(action: {
+                                settings.screenshotMode = mode
+                                HapticManager.selection()
+                            }) {
+                                VStack(spacing: 6) {
+                                    Image(systemName: mode.icon)
+                                        .font(.title3)
+                                    Text(mode.displayName)
+                                        .font(.caption)
+                                        .fontWeight(settings.screenshotMode == mode ? .semibold : .regular)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(settings.screenshotMode == mode ? Color.accentColor.opacity(0.1) : Color(.systemGray6))
+                                .foregroundColor(settings.screenshotMode == mode ? .accentColor : .primary)
+                                .cornerRadius(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(settings.screenshotMode == mode ? Color.accentColor : Color.clear, lineWidth: 2)
+                                )
+                            }
                         }
                     }
-                    .pickerStyle(.segmented)
+                    Text(settings.screenshotMode.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
-                Toggle("Show Avatars", isOn: $settings.showAvatars)
-                Toggle("Show Timestamps", isOn: $settings.showTimestamps)
-                Toggle("Show Reactions", isOn: $settings.showReactions)
             }
 
             // Common settings
@@ -367,7 +588,7 @@ struct ExportProgressOverlay: View {
                         .trim(from: 0, to: progress)
                         .stroke(
                             LinearGradient(
-                                colors: [.blue, .cyan],
+                                colors: [.accentColor, .cyan],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),

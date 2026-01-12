@@ -1,6 +1,6 @@
 //
 //  ToggleRow.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Label on left, toggle on right
 //
@@ -18,7 +18,7 @@ struct ToggleRow: View {
             HStack(spacing: 12) {
                 if let icon = icon {
                     Image(systemName: icon)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.accentColor)
                         .frame(width: 24)
                 }
 

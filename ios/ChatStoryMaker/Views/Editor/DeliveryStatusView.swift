@@ -1,6 +1,6 @@
 //
 //  DeliveryStatusView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Delivery status indicators - WhatsApp checkmarks or iMessage text
 //
@@ -47,7 +47,7 @@ struct DeliveryStatusView: View {
                     Image(systemName: "checkmark")
                 }
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.blue)
+                .foregroundColor(.accentColor)
             }
         }
         .padding(.trailing, 4)

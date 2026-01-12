@@ -1,6 +1,6 @@
 //
 //  AnalyticsService.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Created with Claude Code
 //
@@ -122,6 +122,55 @@ final class AnalyticsService {
     func trackTabSelected(tab: String) {
         Aptabase.shared.trackEvent("tab_selected", with: [
             "tab": tab
+        ])
+    }
+
+    // MARK: - Onboarding Events
+
+    func trackOnboardingStarted() {
+        Aptabase.shared.trackEvent("onboarding_started")
+    }
+
+    func trackOnboardingCompleted(skipped: Bool = false) {
+        Aptabase.shared.trackEvent("onboarding_completed", with: [
+            "skipped": String(skipped)
+        ])
+    }
+
+    func trackOnboardingPageViewed(page: Int) {
+        Aptabase.shared.trackEvent("onboarding_page_viewed", with: [
+            "page": String(page)
+        ])
+    }
+
+    // MARK: - Paywall Events
+
+    func trackPaywallShown(source: String) {
+        Aptabase.shared.trackEvent("paywall_shown", with: [
+            "source": source
+        ])
+    }
+
+    func trackPaywallDismissed() {
+        Aptabase.shared.trackEvent("paywall_dismissed")
+    }
+
+    func trackPurchaseCompleted(plan: String) {
+        Aptabase.shared.trackEvent("purchase_completed", with: [
+            "plan": plan
+        ])
+    }
+
+    func trackPurchaseFailed(plan: String, error: String) {
+        Aptabase.shared.trackEvent("purchase_failed", with: [
+            "plan": plan,
+            "error": error
+        ])
+    }
+
+    func trackRestorePurchases(success: Bool) {
+        Aptabase.shared.trackEvent("restore_purchases", with: [
+            "success": String(success)
         ])
     }
 }

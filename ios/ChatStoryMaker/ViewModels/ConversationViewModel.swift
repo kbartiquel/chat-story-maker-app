@@ -1,6 +1,6 @@
 //
 //  ConversationViewModel.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  ViewModel for managing conversations
 //
@@ -62,7 +62,7 @@ class ConversationViewModel {
 
         // Add sample messages
         let sampleMessages = [
-            ("Hey! Welcome to ChatTale!", false),
+            ("Hey! Welcome to Textory!", false),
             ("Thanks! This app looks cool", true),
             ("You can create fake chat conversations and export them as videos!", false),
             ("Perfect for my TikTok content", true),

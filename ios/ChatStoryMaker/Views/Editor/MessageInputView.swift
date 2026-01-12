@@ -1,6 +1,6 @@
 //
 //  MessageInputView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  iMessage-style input field with + button, text field, and send/mic button
 //
@@ -50,7 +50,7 @@ struct MessageInputView: View {
                     Button(action: onSend) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 28))
-                            .foregroundColor(canSend ? .blue : .gray)
+                            .foregroundColor(canSend ? .accentColor : .gray)
                     }
                     .disabled(!canSend)
                 } else {

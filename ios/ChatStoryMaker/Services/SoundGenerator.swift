@@ -1,6 +1,6 @@
 //
 //  SoundGenerator.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Generates audio samples for message sounds (no files needed)
 //

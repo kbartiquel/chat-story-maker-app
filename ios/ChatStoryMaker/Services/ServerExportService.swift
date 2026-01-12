@@ -1,6 +1,6 @@
 //
 //  ServerExportService.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Service for rendering videos via the Python server API
 //
@@ -93,6 +93,45 @@ class ServerExportService {
             case jobId = "job_id"
             case status, progress
             case videoUrl = "video_url"
+            case error
+        }
+    }
+
+    // MARK: - Screenshot Models
+
+    struct ScreenshotRequest: Codable {
+        let messages: [MessageData]
+        let characters: [CharacterData]
+        let theme: String
+        let conversationTitle: String
+        let isGroupChat: Bool
+        let darkMode: Bool
+        let mode: String
+
+        enum CodingKeys: String, CodingKey {
+            case messages, characters, theme
+            case conversationTitle = "conversation_title"
+            case isGroupChat = "is_group_chat"
+            case darkMode = "dark_mode"
+            case mode
+        }
+    }
+
+    struct ScreenshotResponse: Codable {
+        let success: Bool
+        let imageBase64: String?       // For long mode (single image)
+        let imagesBase64: [String]?    // For paginated mode (multiple images)
+        let width: Int?
+        let height: Int?
+        let pageCount: Int?
+        let error: String?
+
+        enum CodingKeys: String, CodingKey {
+            case success
+            case imageBase64 = "image_base64"
+            case imagesBase64 = "images_base64"
+            case width, height
+            case pageCount = "page_count"
             case error
         }
     }
@@ -225,6 +264,113 @@ class ServerExportService {
         }
 
         throw ServerError.timeout
+    }
+
+    // MARK: - Screenshot Export Method
+
+    func exportScreenshot(
+        config: VideoExportService.ExportConfig,
+        mode: ScreenshotMode
+    ) async throws -> [UIImage] {
+        // Convert config to screenshot request
+        let request = ScreenshotRequest(
+            messages: config.messages.map { msg in
+                MessageData(
+                    id: msg.id.uuidString,
+                    text: msg.text,
+                    characterId: msg.characterID.uuidString
+                )
+            },
+            characters: config.characters.map { char in
+                var avatarBase64: String? = nil
+                if let imageData = char.avatarImageData,
+                   let image = UIImage(data: imageData) {
+                    let size = CGSize(width: 100, height: 100)
+                    UIGraphicsBeginImageContextWithOptions(size, false, 1.0)
+                    image.draw(in: CGRect(origin: .zero, size: size))
+                    let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
+                    UIGraphicsEndImageContext()
+                    if let resized = resizedImage,
+                       let jpegData = resized.jpegData(compressionQuality: 0.7) {
+                        avatarBase64 = jpegData.base64EncodedString()
+                    }
+                }
+
+                return CharacterData(
+                    id: char.id.uuidString,
+                    name: char.name,
+                    isMe: char.isMe,
+                    colorHex: char.colorHex,
+                    avatarEmoji: char.avatarEmoji,
+                    avatarImageBase64: avatarBase64
+                )
+            },
+            theme: config.theme.rawValue,
+            conversationTitle: config.conversationTitle,
+            isGroupChat: config.isGroupChat,
+            darkMode: config.settings.darkMode,
+            mode: mode.rawValue
+        )
+
+        // Make request
+        guard let url = URL(string: "\(Self.baseURL)/render-screenshot") else {
+            throw ServerError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.timeoutInterval = 60
+
+        let encoder = JSONEncoder()
+        urlRequest.httpBody = try encoder.encode(request)
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw ServerError.serverError("Invalid response")
+            }
+
+            if httpResponse.statusCode != 200 {
+                throw ServerError.serverError("HTTP \(httpResponse.statusCode)")
+            }
+
+            let decoder = JSONDecoder()
+            let screenshotResponse = try decoder.decode(ScreenshotResponse.self, from: data)
+
+            guard screenshotResponse.success else {
+                throw ServerError.serverError(screenshotResponse.error ?? "Failed to render screenshot")
+            }
+
+            var images: [UIImage] = []
+
+            // Handle paginated mode (multiple images)
+            if let imagesBase64 = screenshotResponse.imagesBase64 {
+                for base64String in imagesBase64 {
+                    if let imageData = Data(base64Encoded: base64String),
+                       let image = UIImage(data: imageData) {
+                        images.append(image)
+                    }
+                }
+            }
+            // Handle long mode (single image)
+            else if let base64String = screenshotResponse.imageBase64,
+                    let imageData = Data(base64Encoded: base64String),
+                    let image = UIImage(data: imageData) {
+                images.append(image)
+            }
+
+            if images.isEmpty {
+                throw ServerError.serverError("No images returned")
+            }
+
+            return images
+        } catch let error as ServerError {
+            throw error
+        } catch {
+            throw ServerError.networkError(error)
+        }
     }
 
     // MARK: - API Methods

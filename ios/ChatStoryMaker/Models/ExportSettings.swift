@@ -1,6 +1,6 @@
 //
 //  ExportSettings.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Video and screenshot export settings and formats
 //
@@ -21,9 +21,36 @@ struct ExportSettings {
     var showTimestamps: Bool = true
     var showReactions: Bool = true
     var imageQuality: ImageQuality = .high
+    var screenshotMode: ScreenshotMode = .long
 
     // Render mode - always use server/cloud for better quality and emoji support
     var renderMode: RenderMode = .server
+}
+
+enum ScreenshotMode: String, CaseIterable {
+    case long = "long"          // All messages in one tall image
+    case paginated = "paginated" // Split into multiple screen-sized images
+
+    var displayName: String {
+        switch self {
+        case .long: return "Long Screenshot"
+        case .paginated: return "Multi-Page"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .long: return "All messages in one tall image"
+        case .paginated: return "Split into multiple screens"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .long: return "arrow.up.and.down.text.horizontal"
+        case .paginated: return "rectangle.stack"
+        }
+    }
 }
 
 enum RenderMode: String, CaseIterable {

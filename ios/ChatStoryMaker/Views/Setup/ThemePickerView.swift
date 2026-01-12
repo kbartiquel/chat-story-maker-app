@@ -1,6 +1,6 @@
 //
 //  ThemePickerView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Horizontal theme picker
 //
@@ -70,13 +70,13 @@ struct ThemeOptionButton: View {
                 }
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                        .stroke(isSelected ? Color.accentColor : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
                 )
 
                 Text(theme.displayName)
                     .font(.caption)
                     .fontWeight(isSelected ? .semibold : .regular)
-                    .foregroundColor(isSelected ? .blue : .primary)
+                    .foregroundColor(isSelected ? .accentColor : .primary)
             }
         }
         .buttonStyle(.plain)

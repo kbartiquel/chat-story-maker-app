@@ -1,6 +1,6 @@
 //
 //  NewConversationView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  View for creating a new conversation (1-on-1 or group chat)
 //
@@ -25,7 +25,7 @@ struct NewConversationView: View {
                     Toggle(isOn: $isGroupChat) {
                         HStack {
                             Image(systemName: isGroupChat ? "person.3.fill" : "person.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.accentColor)
                             Text(isGroupChat ? "Group Chat" : "1-on-1 Chat")
                         }
                     }
@@ -37,7 +37,7 @@ struct NewConversationView: View {
                             Text("Avatars will appear next to messages from other participants")
                         } icon: {
                             Image(systemName: "info.circle")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.accentColor)
                         }
                         .font(.caption)
                     } else {
@@ -45,7 +45,7 @@ struct NewConversationView: View {
                             Text("Simple two-person conversation with contact info in header")
                         } icon: {
                             Image(systemName: "info.circle")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.accentColor)
                         }
                         .font(.caption)
                     }

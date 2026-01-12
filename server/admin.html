@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Textory Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+        }
+
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1A9E6D 0%, #2EC4A0 100%);
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-card h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #1A9E6D;
+        }
+
+        .login-card p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .login-card input:focus {
+            outline: none;
+            border-color: #1DB678;
+        }
+
+        .login-card button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #1A9E6D 0%, #2EC4A0 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .login-card button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(29, 182, 120, 0.4);
+        }
+
+        .login-error {
+            color: #ff3b30;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        /* Admin Panel */
+        .admin-container {
+            display: none;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1A9E6D 0%, #2EC4A0 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header button {
+            padding: 10px 20px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .header button:hover {
+            background: white;
+            color: #1A9E6D;
+        }
+
+        .header button.save-btn {
+            background: white;
+            color: #1A9E6D;
+            border-color: white;
+        }
+
+        .header button.save-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .content {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+
+        .setting-item:hover {
+            background: #f0f0f0;
+        }
+
+        .setting-label {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .setting-key {
+            font-size: 11px;
+            color: #888;
+            font-family: monospace;
+            margin-top: 2px;
+        }
+
+        /* Toggle Switch */
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 28px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 28px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #1A9E6D 0%, #2EC4A0 100%);
+        }
+
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        /* Number Input */
+        .number-input {
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        .number-input:focus {
+            outline: none;
+            border-color: #1DB678;
+        }
+
+        /* Text Input */
+        .text-input {
+            width: 150px;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #1DB678;
+        }
+
+        /* Delete Button */
+        .delete-btn {
+            background: #ff3b30;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #d63028;
+        }
+
+        /* Add Property */
+        .add-property {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .add-property input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .add-property input:focus {
+            outline: none;
+            border-color: #1DB678;
+        }
+
+        .add-property select {
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .add-property button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #1A9E6D 0%, #2EC4A0 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .add-property button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* JSON View */
+        .json-toggle {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+
+        .json-toggle button {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .json-toggle button:hover {
+            background: #e0e0e0;
+        }
+
+        .json-toggle button.active {
+            background: #1DB678;
+            color: white;
+        }
+
+        .json-view {
+            display: none;
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .json-view pre {
+            color: #d4d4d4;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Status Messages */
+        .status-message {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .status-message.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .status-message.success {
+            background: linear-gradient(135deg, #1A9E6D 0%, #2EC4A0 100%);
+        }
+
+        .status-message.error {
+            background: linear-gradient(135deg, #ff3b30 0%, #ff6b6b 100%);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .add-property {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-card">
+            <h1>Textory</h1>
+            <p>Admin Panel</p>
+            <div class="login-error" id="loginError">Invalid password</div>
+            <input type="password" id="passwordInput" placeholder="Enter admin password" onkeypress="if(event.key === 'Enter') login()">
+            <button onclick="login()">Login</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-container" id="adminPanel">
+        <div class="header">
+            <h1>Textory Admin</h1>
+            <div class="header-actions">
+                <button onclick="resetSettings()">Reset to Defaults</button>
+                <button class="save-btn" onclick="saveSettings()">Save Changes</button>
+                <button onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Paywall Settings -->
+            <div class="section">
+                <h2>Paywall Settings</h2>
+                <div class="json-toggle">
+                    <button id="jsonToggleBtn" onclick="toggleJsonView()">View JSON</button>
+                </div>
+                <div class="settings-grid" id="settingsGrid"></div>
+                <div class="json-view" id="jsonView">
+                    <pre id="jsonContent"></pre>
+                </div>
+            </div>
+
+            <!-- Add Custom Property -->
+            <div class="section">
+                <h2>Add Custom Property</h2>
+                <div class="add-property">
+                    <input type="text" id="newPropertyKey" placeholder="Property key (e.g., myCustomSetting)">
+                    <select id="newPropertyType">
+                        <option value="boolean">Boolean</option>
+                        <option value="number">Number</option>
+                        <option value="string">String</option>
+                    </select>
+                    <input type="text" id="newPropertyValue" placeholder="Value">
+                    <button onclick="addProperty()">Add Property</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-message" id="statusMessage"></div>
+
+    <script>
+        let currentSettings = {};
+        let authToken = '';
+
+        // Core settings that cannot be deleted
+        const coreSettings = [
+            'videoExportLimit',
+            'aiGenerationLimit',
+            'hardPaywall',
+            'paywallCloseButtonDelay',
+            'paywallCloseButtonDelayOnLimit',
+            'showPaywallOnStart',
+            'paywallMonthly',
+            'paywallWeekly',
+            'paywallLifetime',
+            'paywallYearly'
+        ];
+
+        // Login
+        async function login() {
+            const password = document.getElementById('passwordInput').value;
+            const errorEl = document.getElementById('loginError');
+
+            try {
+                const response = await fetch('/admin/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    authToken = password;
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'block';
+                    loadSettings();
+                } else {
+                    errorEl.style.display = 'block';
+                    errorEl.textContent = data.message || 'Invalid password';
+                }
+            } catch (error) {
+                errorEl.style.display = 'block';
+                errorEl.textContent = 'Connection error';
+            }
+        }
+
+        // Logout
+        function logout() {
+            authToken = '';
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        // Load settings
+        async function loadSettings() {
+            try {
+                const response = await fetch('/admin/settings');
+                currentSettings = await response.json();
+                renderSettings();
+                updateJsonView();
+            } catch (error) {
+                showStatus('Failed to load settings', 'error');
+            }
+        }
+
+        // Render settings grid
+        function renderSettings() {
+            const grid = document.getElementById('settingsGrid');
+            grid.innerHTML = '';
+
+            for (const [key, value] of Object.entries(currentSettings)) {
+                const item = document.createElement('div');
+                item.className = 'setting-item';
+
+                const label = formatLabel(key);
+                const isCore = coreSettings.includes(key);
+
+                let inputHtml = '';
+                if (typeof value === 'boolean') {
+                    inputHtml = `
+                        <label class="toggle">
+                            <input type="checkbox" ${value ? 'checked' : ''} onchange="updateSetting('${key}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    `;
+                } else if (typeof value === 'number') {
+                    inputHtml = `<input type="number" class="number-input" value="${value}" onchange="updateSetting('${key}', parseFloat(this.value))">`;
+                } else {
+                    inputHtml = `<input type="text" class="text-input" value="${value}" onchange="updateSetting('${key}', this.value)">`;
+                }
+
+                const deleteBtn = !isCore ? `<button class="delete-btn" onclick="deleteSetting('${key}')">Delete</button>` : '';
+
+                item.innerHTML = `
+                    <div>
+                        <div class="setting-label">${label}</div>
+                        <div class="setting-key">${key}</div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        ${inputHtml}
+                        ${deleteBtn}
+                    </div>
+                `;
+
+                grid.appendChild(item);
+            }
+        }
+
+        // Format setting key to readable label
+        function formatLabel(key) {
+            return key
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, str => str.toUpperCase())
+                .trim();
+        }
+
+        // Update a setting value
+        function updateSetting(key, value) {
+            currentSettings[key] = value;
+            updateJsonView();
+        }
+
+        // Delete a setting
+        function deleteSetting(key) {
+            if (confirm(`Delete "${formatLabel(key)}"?`)) {
+                delete currentSettings[key];
+                renderSettings();
+                updateJsonView();
+            }
+        }
+
+        // Add new property
+        function addProperty() {
+            const key = document.getElementById('newPropertyKey').value.trim();
+            const type = document.getElementById('newPropertyType').value;
+            let value = document.getElementById('newPropertyValue').value;
+
+            if (!key) {
+                showStatus('Please enter a property key', 'error');
+                return;
+            }
+
+            if (currentSettings.hasOwnProperty(key)) {
+                showStatus('Property already exists', 'error');
+                return;
+            }
+
+            // Convert value based on type
+            if (type === 'boolean') {
+                value = value.toLowerCase() === 'true';
+            } else if (type === 'number') {
+                value = parseFloat(value) || 0;
+            }
+
+            currentSettings[key] = value;
+            renderSettings();
+            updateJsonView();
+
+            // Clear inputs
+            document.getElementById('newPropertyKey').value = '';
+            document.getElementById('newPropertyValue').value = '';
+
+            showStatus('Property added', 'success');
+        }
+
+        // Save settings
+        async function saveSettings() {
+            try {
+                const response = await fetch('/admin/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authToken
+                    },
+                    body: JSON.stringify(currentSettings)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    currentSettings = data.settings;
+                    renderSettings();
+                    updateJsonView();
+                    showStatus('Settings saved successfully', 'success');
+                } else {
+                    showStatus(data.message || 'Failed to save settings', 'error');
+                }
+            } catch (error) {
+                showStatus('Connection error', 'error');
+            }
+        }
+
+        // Reset settings
+        async function resetSettings() {
+            if (!confirm('Reset all settings to defaults? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/settings/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': authToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    currentSettings = data.settings;
+                    renderSettings();
+                    updateJsonView();
+                    showStatus('Settings reset to defaults', 'success');
+                } else {
+                    showStatus(data.message || 'Failed to reset settings', 'error');
+                }
+            } catch (error) {
+                showStatus('Connection error', 'error');
+            }
+        }
+
+        // Toggle JSON view
+        function toggleJsonView() {
+            const grid = document.getElementById('settingsGrid');
+            const jsonView = document.getElementById('jsonView');
+            const btn = document.getElementById('jsonToggleBtn');
+
+            if (jsonView.style.display === 'none' || jsonView.style.display === '') {
+                grid.style.display = 'none';
+                jsonView.style.display = 'block';
+                btn.textContent = 'View Grid';
+                btn.classList.add('active');
+            } else {
+                grid.style.display = 'grid';
+                jsonView.style.display = 'none';
+                btn.textContent = 'View JSON';
+                btn.classList.remove('active');
+            }
+        }
+
+        // Update JSON view
+        function updateJsonView() {
+            document.getElementById('jsonContent').textContent = JSON.stringify(currentSettings, null, 2);
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const el = document.getElementById('statusMessage');
+            el.textContent = message;
+            el.className = `status-message ${type} show`;
+
+            setTimeout(() => {
+                el.classList.remove('show');
+            }, 3000);
+        }
+
+        // Check for existing session on page load
+        window.onload = function() {
+            document.getElementById('passwordInput').focus();
+        };
+    </script>
+</body>
+</html>

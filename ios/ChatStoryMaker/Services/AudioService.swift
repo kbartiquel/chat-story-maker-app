@@ -1,6 +1,6 @@
 //
 //  AudioService.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  System sounds for messaging (no files needed)
 //

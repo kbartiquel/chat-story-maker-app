@@ -1,6 +1,6 @@
 //
 //  Helpers.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Utility functions
 //

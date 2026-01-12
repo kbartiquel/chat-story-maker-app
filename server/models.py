@@ -1,6 +1,6 @@
 #
 # models.py
-# ChatStoryMaker Server
+# Textory Server
 #
 # Pydantic models for API request/response
 #
@@ -146,3 +146,32 @@ class AIServiceStatus(BaseModel):
     anthropic_configured: bool
     openai_model: str
     anthropic_model: str
+
+
+# ===========================================
+# Screenshot Export Models
+# ===========================================
+
+class ScreenshotMode(str, Enum):
+    long = "long"            # All messages in one tall image
+    paginated = "paginated"  # Split into multiple screen-sized images
+
+
+class ScreenshotRequest(BaseModel):
+    messages: list[Message]
+    characters: list[Character]
+    theme: ChatTheme = ChatTheme.imessage
+    conversation_title: str = "Chat"
+    is_group_chat: bool = False
+    dark_mode: bool = False
+    mode: ScreenshotMode = ScreenshotMode.long
+
+
+class ScreenshotResponse(BaseModel):
+    success: bool
+    image_base64: Optional[str] = None  # Base64-encoded PNG image (for long mode)
+    images_base64: Optional[List[str]] = None  # List of base64 images (for paginated mode)
+    width: Optional[int] = None
+    height: Optional[int] = None
+    page_count: Optional[int] = None
+    error: Optional[str] = None

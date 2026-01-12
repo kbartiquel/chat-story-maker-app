@@ -1,6 +1,6 @@
 #
 # renderer.py
-# ChatStoryMaker Server
+# Textory Server
 #
 # Video rendering engine - Authentic iMessage style
 #
@@ -157,8 +157,8 @@ class VideoRenderer:
         # Layout constants - iMessage style (no status bar)
         self.keyboard_height = int(216 * self.scale)
         self.input_bar_height = int(52 * self.scale)
-        # 1:1 chat has taller header with avatar, name, and timestamp
-        self.header_height = int(120 * self.scale) if not self._is_group_chat else int(50 * self.scale)
+        # Both 1:1 and group chat have taller header with avatar(s)
+        self.header_height = int(120 * self.scale)
         self.bubble_padding = int(16 * self.scale)
         self.avatar_size = int(28 * self.scale)
         self.avatar_margin = int(6 * self.scale)
@@ -251,6 +251,55 @@ class VideoRenderer:
         initial_x = x + (size - initial_width) // 2
         initial_y = y + (size - initial_height) // 2 - int(2 * self.scale)
         draw.text((initial_x, initial_y), initial, fill=(255, 255, 255), font=initial_font)
+
+    def draw_stacked_avatars(
+        self,
+        img: Image.Image,
+        draw: ImageDraw.Draw,
+        characters: list,
+        center_x: int,
+        y: int,
+        avatar_size: int,
+        max_display: int = 4
+    ) -> int:
+        """Draw stacked/overlapping avatars for group chat header.
+
+        Returns the total width of the stacked avatars.
+        """
+        # Filter to non-me characters for display, limit to max_display
+        display_chars = [c for c in characters if not c.is_me][:max_display]
+        if not display_chars:
+            display_chars = characters[:max_display]
+
+        num_avatars = len(display_chars)
+        if num_avatars == 0:
+            return 0
+
+        # Overlap percentage (each avatar overlaps by ~40%)
+        overlap = int(avatar_size * 0.4)
+
+        # Calculate total width of stacked avatars
+        total_width = avatar_size + (num_avatars - 1) * (avatar_size - overlap)
+
+        # Starting x position (centered)
+        start_x = center_x - total_width // 2
+
+        # Draw avatars from left to right (later ones overlap earlier ones)
+        for i, character in enumerate(display_chars):
+            avatar_x = start_x + i * (avatar_size - overlap)
+
+            # Draw white border/ring around avatar
+            border_size = int(2 * self.scale)
+            draw.ellipse(
+                [(avatar_x - border_size, y - border_size),
+                 (avatar_x + avatar_size + border_size, y + avatar_size + border_size)],
+                fill=(255, 255, 255)
+            )
+
+            # Draw the avatar
+            self.draw_avatar(img, draw, character, avatar_x, y, avatar_size)
+
+        return total_width
 
     def draw_bubble_with_tail(
         self,
@@ -634,30 +683,82 @@ class VideoRenderer:
 
         else:
             # === GROUP CHAT HEADER ===
-            # "iMessage" label centered
+            # Layout: [Back] [Stacked Avatars] | Group Name (optional) | X People | separator | iMessage + Time
+
+            group_avatar_size = int(32 * self.scale)  # Slightly smaller for group
+
+            # Stacked avatars centered at top
+            avatar_y = int(8 * self.scale)
+            center_x = self.phone_width // 2
+
+            # Draw stacked avatars
+            self.draw_stacked_avatars(
+                img, draw,
+                self.request.characters,
+                center_x, avatar_y,
+                group_avatar_size,
+                max_display=4
+            )
+
+            # Back arrow on the left (aligned with avatar center)
+            icon_row_y = avatar_y + group_avatar_size // 2
+            arrow_font_size = int(38 * self.scale)
+            arrow_font = get_font(arrow_font_size)
+            arrow_x = int(10 * self.scale)
+            arrow_y = icon_row_y - arrow_font_size // 2 - int(8 * self.scale)
+            draw.text((arrow_x, arrow_y), "‹", fill=blue_color, font=arrow_font)
+
+            # Position tracker for text below avatars
+            current_y = avatar_y + group_avatar_size + int(2 * self.scale)
+
+            # Check if there's a group name (conversation_title that's not default)
+            group_name = self.request.conversation_title
+            has_group_name = group_name and group_name not in ["Chat", "Group Chat", ""]
+
+            if has_group_name:
+                # Group name (bold, black text)
+                name_font = get_font(int(13 * self.scale), bold=True)
+                bbox = draw.textbbox((0, 0), group_name, font=name_font)
+                name_width = bbox[2] - bbox[0]
+                name_x = (self.phone_width - name_width) // 2
+                draw.text((name_x, current_y), group_name, fill=text_color, font=name_font)
+                current_y += int(16 * self.scale)
+
+            # "X People ›" text (gray if group name exists, otherwise main text)
+            num_people = len(self.request.characters)
+            people_font = get_font(int(12 * self.scale))
+            people_text = f"{num_people} People ›"
+            bbox = draw.textbbox((0, 0), people_text, font=people_font)
+            people_width = bbox[2] - bbox[0]
+            people_x = (self.phone_width - people_width) // 2
+            people_color = gray_color if has_group_name else text_color
+            draw.text((people_x, current_y), people_text, fill=people_color, font=people_font)
+
+            # Separator line - below people text
+            separator_y = current_y + int(18 * self.scale)
+            draw.line(
+                [(0, separator_y), (self.phone_width, separator_y)],
+                fill=hex_to_rgb(IMESSAGE_SEPARATOR),
+                width=1
+            )
+
+            # "iMessage" label below separator
             label_font = get_font(int(11 * self.scale))
             label_text = "iMessage"
             bbox = draw.textbbox((0, 0), label_text, font=label_font)
             label_width = bbox[2] - bbox[0]
             label_x = (self.phone_width - label_width) // 2
-            label_y = int(8 * self.scale)
+            label_y = separator_y + int(8 * self.scale)
             draw.text((label_x, label_y), label_text, fill=gray_color, font=label_font)
 
-            # Timestamp centered below "iMessage"
+            # Timestamp below iMessage
             time_font = get_font(int(11 * self.scale))
             time_text = "Today 9:40 PM"
             bbox = draw.textbbox((0, 0), time_text, font=time_font)
             time_width = bbox[2] - bbox[0]
             time_x = (self.phone_width - time_width) // 2
-            time_y = label_y + int(16 * self.scale)
+            time_y = label_y + int(14 * self.scale)
             draw.text((time_x, time_y), time_text, fill=gray_color, font=time_font)
-
-            # Separator line
-            draw.line(
-                [(0, self.header_height - 1), (self.phone_width, self.header_height - 1)],
-                fill=hex_to_rgb(IMESSAGE_SEPARATOR),
-                width=1
-            )
 
     def calculate_bubble_height(self, text: str, is_me: bool, character: Optional[Character]) -> int:
         """Calculate the height of a message bubble."""
@@ -1164,3 +1265,611 @@ class VideoRenderer:
         sound *= envelope
         self._receive_sound_cache = sound.astype(np.float32)
         return self._receive_sound_cache
+
+
+class ScreenshotRenderer:
+    """Renders chat conversations to static images - Authentic iMessage style."""
+
+    # Render at 3x scale for HD quality (1170px width = iPhone 14 Pro Max @3x)
+    RENDER_SCALE = 3
+
+    def __init__(self, request):
+        from models import ScreenshotRequest
+        self.request: ScreenshotRequest = request
+        self.messages = request.messages
+        self.characters = {c.id: c for c in request.characters}
+        self.theme = THEMES.get(request.theme.value, THEMES["imessage"])
+        self.dark_mode = request.dark_mode
+
+        # HD resolution for screenshots (3x scale)
+        self.width = 390 * self.RENDER_SCALE  # 1170px - HD quality
+        self.scale = float(self.RENDER_SCALE)
+
+        # Determine if group chat
+        self._is_group_chat = request.is_group_chat or len(request.characters) > 2
+
+        # Layout constants - same header height for both 1:1 and group chat
+        self.header_height = int(120 * self.scale)
+        self.bubble_padding = int(16 * self.scale)
+        self.avatar_size = int(28 * self.scale)
+        self.avatar_margin = int(6 * self.scale)
+        self.max_bubble_width = int(self.width * 0.70)
+        self.bubble_radius = int(18 * self.scale)
+        self.tail_size = int(8 * self.scale)
+
+        # Fonts
+        self.font_size = int(17 * self.scale)
+        self.small_font_size = int(13 * self.scale)
+        self.name_font_size = int(12 * self.scale)
+
+    def get_character(self, character_id: str) -> Optional[Character]:
+        """Get character by ID."""
+        return self.characters.get(character_id)
+
+    def get_main_contact(self) -> Optional[Character]:
+        """Get the main contact (first non-me character)."""
+        for char in self.request.characters:
+            if not char.is_me:
+                return char
+        return None
+
+    def draw_avatar(
+        self,
+        img: Image.Image,
+        draw: ImageDraw.Draw,
+        character: Character,
+        x: int,
+        y: int,
+        size: int
+    ):
+        """Draw a circular avatar for a character."""
+        avatar_color = hex_to_rgb(character.color_hex)
+
+        # Try to draw base64 image avatar
+        if character.avatar_image_base64:
+            try:
+                image_data = base64.b64decode(character.avatar_image_base64)
+                avatar_img = Image.open(io.BytesIO(image_data))
+
+                if avatar_img.mode != 'RGBA':
+                    avatar_img = avatar_img.convert('RGBA')
+
+                avatar_img = avatar_img.resize((size, size), Image.Resampling.LANCZOS)
+
+                # Create circular mask
+                mask = Image.new('L', (size, size), 0)
+                mask_draw = ImageDraw.Draw(mask)
+                mask_draw.ellipse([(0, 0), (size, size)], fill=255)
+
+                avatar_img.putalpha(mask)
+                img.paste(avatar_img, (x, y), avatar_img)
+                return
+            except Exception as e:
+                print(f"Failed to decode avatar image: {e}")
+
+        # Draw colored circle background
+        draw.ellipse([(x, y), (x + size, y + size)], fill=avatar_color)
+
+        # Try to draw emoji avatar
+        if character.avatar_emoji:
+            emoji_font = get_font(int(size * 0.55), bold=False)
+            with Pilmoji(img) as pilmoji:
+                bbox = draw.textbbox((0, 0), character.avatar_emoji, font=emoji_font)
+                emoji_width = bbox[2] - bbox[0]
+                emoji_height = bbox[3] - bbox[1]
+                emoji_x = x + (size - emoji_width) // 2
+                emoji_y = y + (size - emoji_height) // 2 - int(2 * self.scale)
+                pilmoji.text((emoji_x, emoji_y), character.avatar_emoji, font=emoji_font)
+            return
+
+        # Fallback: draw initial letter
+        initial = character.name[0].upper() if character.name else "?"
+        initial_font = get_font(int(size * 0.45), bold=True)
+        bbox = draw.textbbox((0, 0), initial, font=initial_font)
+        initial_width = bbox[2] - bbox[0]
+        initial_height = bbox[3] - bbox[1]
+        initial_x = x + (size - initial_width) // 2
+        initial_y = y + (size - initial_height) // 2 - int(2 * self.scale)
+        draw.text((initial_x, initial_y), initial, fill=(255, 255, 255), font=initial_font)
+
+    def draw_stacked_avatars(
+        self,
+        img: Image.Image,
+        draw: ImageDraw.Draw,
+        characters: list,
+        center_x: int,
+        y: int,
+        avatar_size: int,
+        max_display: int = 4
+    ) -> int:
+        """Draw stacked/overlapping avatars for group chat header.
+
+        Returns the total width of the stacked avatars.
+        """
+        # Filter to non-me characters for display, limit to max_display
+        display_chars = [c for c in characters if not c.is_me][:max_display]
+        if not display_chars:
+            display_chars = characters[:max_display]
+
+        num_avatars = len(display_chars)
+        if num_avatars == 0:
+            return 0
+
+        # Overlap percentage (each avatar overlaps by ~40%)
+        overlap = int(avatar_size * 0.4)
+
+        # Calculate total width of stacked avatars
+        total_width = avatar_size + (num_avatars - 1) * (avatar_size - overlap)
+
+        # Starting x position (centered)
+        start_x = center_x - total_width // 2
+
+        # Draw avatars from left to right (later ones overlap earlier ones)
+        for i, character in enumerate(display_chars):
+            avatar_x = start_x + i * (avatar_size - overlap)
+
+            # Draw white border/ring around avatar
+            border_size = int(2 * self.scale)
+            draw.ellipse(
+                [(avatar_x - border_size, y - border_size),
+                 (avatar_x + avatar_size + border_size, y + avatar_size + border_size)],
+                fill=(255, 255, 255)
+            )
+
+            # Draw the avatar
+            self.draw_avatar(img, draw, character, avatar_x, y, avatar_size)
+
+        return total_width
+
+    def draw_bubble_with_tail(
+        self,
+        draw: ImageDraw.Draw,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        color: tuple,
+        is_sender: bool
+    ):
+        """Draw a message bubble with an iMessage-style tail."""
+        radius = self.bubble_radius
+        tail_size = self.tail_size
+
+        # Draw main rounded rectangle
+        draw.rounded_rectangle([(x, y), (x + width, y + height)], radius=radius, fill=color)
+
+        # Draw tail
+        if is_sender:
+            tail_x = x + width - int(2 * self.scale)
+            tail_y = y + height - radius
+            points = [
+                (tail_x, tail_y),
+                (tail_x + tail_size, tail_y + tail_size + int(4 * self.scale)),
+                (tail_x, tail_y + tail_size)
+            ]
+            draw.polygon(points, fill=color)
+        else:
+            tail_x = x + int(2 * self.scale)
+            tail_y = y + height - radius
+            points = [
+                (tail_x, tail_y),
+                (tail_x - tail_size, tail_y + tail_size + int(4 * self.scale)),
+                (tail_x, tail_y + tail_size)
+            ]
+            draw.polygon(points, fill=color)
+
+    def calculate_bubble_height(self, text: str, is_me: bool, character: Optional[Character]) -> int:
+        """Calculate the height of a message bubble."""
+        font = get_font(self.font_size)
+        max_text_width = self.max_bubble_width - int(24 * self.scale)
+
+        words = text.split()
+        lines = []
+        current_line = ""
+
+        temp_img = Image.new("RGB", (1, 1))
+        temp_draw = ImageDraw.Draw(temp_img)
+
+        for word in words:
+            test_line = f"{current_line} {word}".strip()
+            bbox = temp_draw.textbbox((0, 0), test_line, font=font)
+            if bbox[2] - bbox[0] <= max_text_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+
+        line_height = int(22 * self.scale)
+        text_height = max(len(lines), 1) * line_height
+
+        height = text_height + int(16 * self.scale)
+        height += int(8 * self.scale)
+
+        if self._is_group_chat and not is_me and character:
+            height += int(18 * self.scale)
+
+        return height
+
+    def draw_header(self, draw: ImageDraw.Draw, img: Image.Image):
+        """Draw header - 1:1 has avatar/name/video icon, group chat has timestamp."""
+        header_bg = "#000000" if self.dark_mode else "#FFFFFF"
+        blue_color = hex_to_rgb("#007AFF")
+        gray_color = hex_to_rgb(IMESSAGE_GRAY)
+        text_color = (255, 255, 255) if self.dark_mode else (0, 0, 0)
+
+        draw.rectangle([(0, 0), (self.width, self.header_height)], fill=hex_to_rgb(header_bg))
+
+        if not self._is_group_chat:
+            contact = self.get_main_contact()
+            contact_avatar_size = int(40 * self.scale)
+
+            avatar_x = (self.width - contact_avatar_size) // 2
+            avatar_y = int(8 * self.scale)
+
+            if contact:
+                self.draw_avatar(img, draw, contact, avatar_x, avatar_y, contact_avatar_size)
+                contact_name = contact.name
+            else:
+                draw.ellipse(
+                    [(avatar_x, avatar_y), (avatar_x + contact_avatar_size, avatar_y + contact_avatar_size)],
+                    fill=hex_to_rgb("#C7C7CC")
+                )
+                contact_name = self.request.conversation_title
+
+            icon_row_y = avatar_y + contact_avatar_size // 2
+
+            # Back arrow
+            arrow_font_size = int(38 * self.scale)
+            arrow_font = get_font(arrow_font_size)
+            arrow_x = int(10 * self.scale)
+            arrow_y = icon_row_y - arrow_font_size // 2 - int(8 * self.scale)
+            draw.text((arrow_x, arrow_y), "‹", fill=blue_color, font=arrow_font)
+
+            # Video icon
+            assets_dir = os.path.join(os.path.dirname(__file__), "assets")
+            video_icon_path = os.path.join(assets_dir, "video_icon.png")
+
+            if os.path.exists(video_icon_path):
+                try:
+                    video_icon = Image.open(video_icon_path)
+                    if video_icon.mode != 'RGBA':
+                        video_icon = video_icon.convert('RGBA')
+
+                    target_height = int(18 * self.scale)
+                    aspect_ratio = video_icon.width / video_icon.height
+                    target_width = int(target_height * aspect_ratio)
+                    video_icon = video_icon.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+                    video_x = self.width - target_width - int(16 * self.scale)
+                    video_y = icon_row_y - target_height // 2
+                    img.paste(video_icon, (video_x, video_y), video_icon)
+                except Exception as e:
+                    print(f"Failed to load video icon: {e}")
+
+            # Name with chevron
+            name_font = get_font(int(13 * self.scale))
+            name_text = f"{contact_name} ›"
+            bbox = draw.textbbox((0, 0), name_text, font=name_font)
+            name_width = bbox[2] - bbox[0]
+            name_x = (self.width - name_width) // 2
+            name_y = avatar_y + contact_avatar_size + int(2 * self.scale)
+            draw.text((name_x, name_y), name_text, fill=text_color, font=name_font)
+
+            # Separator line
+            separator_y = name_y + int(20 * self.scale)
+            draw.line(
+                [(0, separator_y), (self.width, separator_y)],
+                fill=hex_to_rgb(IMESSAGE_SEPARATOR),
+                width=1
+            )
+
+            # "iMessage" label
+            label_font = get_font(int(11 * self.scale))
+            label_text = "iMessage"
+            bbox = draw.textbbox((0, 0), label_text, font=label_font)
+            label_width = bbox[2] - bbox[0]
+            label_x = (self.width - label_width) // 2
+            label_y = separator_y + int(8 * self.scale)
+            draw.text((label_x, label_y), label_text, fill=gray_color, font=label_font)
+
+            # Time
+            time_font = get_font(int(11 * self.scale))
+            time_text = "Today 9:41 AM"
+            bbox = draw.textbbox((0, 0), time_text, font=time_font)
+            time_width = bbox[2] - bbox[0]
+            time_x = (self.width - time_width) // 2
+            time_y = label_y + int(14 * self.scale)
+            draw.text((time_x, time_y), time_text, fill=gray_color, font=time_font)
+
+        else:
+            # === GROUP CHAT HEADER ===
+            # Layout: [Back] [Stacked Avatars] | Group Name (optional) | X People | separator | iMessage + Time
+
+            group_avatar_size = int(32 * self.scale)  # Slightly smaller for group
+
+            # Stacked avatars centered at top
+            avatar_y = int(8 * self.scale)
+            center_x = self.width // 2
+
+            # Draw stacked avatars
+            self.draw_stacked_avatars(
+                img, draw,
+                self.request.characters,
+                center_x, avatar_y,
+                group_avatar_size,
+                max_display=4
+            )
+
+            # Back arrow on the left (aligned with avatar center)
+            icon_row_y = avatar_y + group_avatar_size // 2
+            arrow_font_size = int(38 * self.scale)
+            arrow_font = get_font(arrow_font_size)
+            arrow_x = int(10 * self.scale)
+            arrow_y = icon_row_y - arrow_font_size // 2 - int(8 * self.scale)
+            draw.text((arrow_x, arrow_y), "‹", fill=blue_color, font=arrow_font)
+
+            # Position tracker for text below avatars
+            current_y = avatar_y + group_avatar_size + int(2 * self.scale)
+
+            # Check if there's a group name (conversation_title that's not default)
+            group_name = self.request.conversation_title
+            has_group_name = group_name and group_name not in ["Chat", "Group Chat", ""]
+
+            if has_group_name:
+                # Group name (bold, black text)
+                name_font = get_font(int(13 * self.scale), bold=True)
+                bbox = draw.textbbox((0, 0), group_name, font=name_font)
+                name_width = bbox[2] - bbox[0]
+                name_x = (self.width - name_width) // 2
+                draw.text((name_x, current_y), group_name, fill=text_color, font=name_font)
+                current_y += int(16 * self.scale)
+
+            # "X People ›" text (gray if group name exists, otherwise main text)
+            num_people = len(self.request.characters)
+            people_font = get_font(int(12 * self.scale))
+            people_text = f"{num_people} People ›"
+            bbox = draw.textbbox((0, 0), people_text, font=people_font)
+            people_width = bbox[2] - bbox[0]
+            people_x = (self.width - people_width) // 2
+            people_color = gray_color if has_group_name else text_color
+            draw.text((people_x, current_y), people_text, fill=people_color, font=people_font)
+
+            # Separator line - below people text
+            separator_y = current_y + int(18 * self.scale)
+            draw.line(
+                [(0, separator_y), (self.width, separator_y)],
+                fill=hex_to_rgb(IMESSAGE_SEPARATOR),
+                width=1
+            )
+
+            # "iMessage" label below separator
+            label_font = get_font(int(11 * self.scale))
+            label_text = "iMessage"
+            bbox = draw.textbbox((0, 0), label_text, font=label_font)
+            label_width = bbox[2] - bbox[0]
+            label_x = (self.width - label_width) // 2
+            label_y = separator_y + int(8 * self.scale)
+            draw.text((label_x, label_y), label_text, fill=gray_color, font=label_font)
+
+            # Timestamp below iMessage
+            time_font = get_font(int(11 * self.scale))
+            time_text = "Today 9:40 PM"
+            bbox = draw.textbbox((0, 0), time_text, font=time_font)
+            time_width = bbox[2] - bbox[0]
+            time_x = (self.width - time_width) // 2
+            time_y = label_y + int(14 * self.scale)
+            draw.text((time_x, time_y), time_text, fill=gray_color, font=time_font)
+
+    def draw_bubble(
+        self,
+        draw: ImageDraw.Draw,
+        img: Image.Image,
+        text: str,
+        is_me: bool,
+        character: Optional[Character],
+        y_offset: int
+    ) -> int:
+        """Draw a message bubble with tail and return new y_offset."""
+        font = get_font(self.font_size)
+
+        if is_me:
+            bubble_color = hex_to_rgb(self.theme["sender_bubble"])
+            text_color = hex_to_rgb(self.theme["sender_text"])
+        else:
+            if self.dark_mode:
+                bubble_color = hex_to_rgb("#3A3A3C")
+            else:
+                bubble_color = hex_to_rgb(self.theme["receiver_bubble"])
+            text_color = hex_to_rgb(self.theme["receiver_text"]) if not self.dark_mode else (255, 255, 255)
+
+        max_text_width = self.max_bubble_width - int(24 * self.scale)
+        words = text.split()
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = f"{current_line} {word}".strip()
+            bbox = draw.textbbox((0, 0), test_line, font=font)
+            if bbox[2] - bbox[0] <= max_text_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+
+        if not lines:
+            lines = [text]
+
+        line_height = int(22 * self.scale)
+        text_height = len(lines) * line_height
+
+        max_line_width = 0
+        for line in lines:
+            bbox = draw.textbbox((0, 0), line, font=font)
+            max_line_width = max(max_line_width, bbox[2] - bbox[0])
+
+        bubble_width = max_line_width + int(24 * self.scale)
+        bubble_height = text_height + int(14 * self.scale)
+
+        actual_y = y_offset
+
+        if self._is_group_chat and not is_me and character:
+            name_font = get_font(self.name_font_size)
+            name_color = hex_to_rgb(IMESSAGE_GRAY)
+            name_x = self.bubble_padding + self.avatar_size + self.avatar_margin
+            with Pilmoji(img) as pilmoji:
+                pilmoji.text((name_x, actual_y), character.name, fill=name_color, font=name_font)
+            actual_y += int(18 * self.scale)
+
+            avatar_x = self.bubble_padding
+            avatar_y = actual_y + bubble_height - self.avatar_size
+            self.draw_avatar(img, draw, character, avatar_x, avatar_y, self.avatar_size)
+
+            bubble_x = self.bubble_padding + self.avatar_size + self.avatar_margin
+        elif not is_me:
+            bubble_x = self.bubble_padding
+        else:
+            bubble_x = self.width - bubble_width - self.bubble_padding
+
+        self.draw_bubble_with_tail(draw, bubble_x, actual_y, bubble_width, bubble_height, bubble_color, is_me)
+
+        text_x = bubble_x + int(12 * self.scale)
+        text_y = actual_y + int(7 * self.scale)
+
+        with Pilmoji(img) as pilmoji:
+            for line in lines:
+                pilmoji.text((text_x, text_y), line, fill=text_color, font=font)
+                text_y += line_height
+
+        return actual_y + bubble_height + int(6 * self.scale)
+
+    def render(self) -> Image.Image:
+        """Render the screenshot and return PIL Image (long mode)."""
+        messages_to_render = list(self.messages)
+
+        # Calculate total height
+        total_height = self.header_height + int(10 * self.scale)
+
+        for message in messages_to_render:
+            character = self.get_character(message.character_id)
+            is_me = character.is_me if character else True
+            height = self.calculate_bubble_height(message.text, is_me, character)
+            total_height += height
+
+        total_height += int(40 * self.scale)  # Bottom padding
+
+        # Create image
+        bg_color = "#000000" if self.dark_mode else "#FFFFFF"
+        img = Image.new("RGB", (self.width, total_height), hex_to_rgb(bg_color))
+        draw = ImageDraw.Draw(img)
+
+        # Draw header
+        self.draw_header(draw, img)
+
+        # Draw messages
+        y_offset = self.header_height + int(10 * self.scale)
+
+        for message in messages_to_render:
+            character = self.get_character(message.character_id)
+            is_me = character.is_me if character else True
+            y_offset = self.draw_bubble(draw, img, message.text, is_me, character, y_offset)
+
+        return img
+
+    def render_paginated(self) -> list[Image.Image]:
+        """Render the screenshot as multiple page-sized images."""
+        # iPhone screen height (9:16 aspect ratio)
+        screen_height = int(self.width * 16 / 9)  # ~693 pixels for 390 width
+        message_area_height = screen_height - self.header_height - int(50 * self.scale)  # Leave space for header and bottom
+
+        pages = []
+        messages_to_render = list(self.messages)
+        current_page_messages = []
+        current_height = 0
+
+        # Group messages into pages
+        for message in messages_to_render:
+            character = self.get_character(message.character_id)
+            is_me = character.is_me if character else True
+            msg_height = self.calculate_bubble_height(message.text, is_me, character)
+
+            if current_height + msg_height > message_area_height and current_page_messages:
+                # Start new page
+                pages.append(current_page_messages)
+                current_page_messages = [(message, character)]
+                current_height = msg_height
+            else:
+                current_page_messages.append((message, character))
+                current_height += msg_height
+
+        # Add last page
+        if current_page_messages:
+            pages.append(current_page_messages)
+
+        # Render each page
+        rendered_pages = []
+        for page_idx, page_messages in enumerate(pages):
+            bg_color = "#000000" if self.dark_mode else "#FFFFFF"
+            img = Image.new("RGB", (self.width, screen_height), hex_to_rgb(bg_color))
+            draw = ImageDraw.Draw(img)
+
+            # Draw header
+            self.draw_header(draw, img)
+
+            # Draw page indicator if multiple pages
+            if len(pages) > 1:
+                indicator_font = get_font(int(10 * self.scale))
+                indicator_text = f"{page_idx + 1}/{len(pages)}"
+                bbox = draw.textbbox((0, 0), indicator_text, font=indicator_font)
+                indicator_width = bbox[2] - bbox[0]
+                indicator_x = self.width - indicator_width - int(12 * self.scale)
+                indicator_y = self.header_height + int(4 * self.scale)
+                draw.text((indicator_x, indicator_y), indicator_text, fill=hex_to_rgb(IMESSAGE_GRAY), font=indicator_font)
+
+            # Draw messages
+            y_offset = self.header_height + int(20 * self.scale)
+
+            for message, character in page_messages:
+                is_me = character.is_me if character else True
+                y_offset = self.draw_bubble(draw, img, message.text, is_me, character, y_offset)
+
+            rendered_pages.append(img)
+
+        return rendered_pages
+
+    def render_to_base64(self) -> str:
+        """Render the screenshot and return as base64-encoded PNG.
+
+        Already rendered at 3x scale (1170px width) for HD quality,
+        no additional upscaling needed.
+        """
+        img = self.render()
+
+        # Convert to base64 (already HD at 3x scale)
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG", optimize=True)
+        buffer.seek(0)
+        return base64.b64encode(buffer.read()).decode('utf-8')
+
+    def render_paginated_to_base64(self) -> list[str]:
+        """Render paginated screenshots and return as list of base64-encoded PNGs.
+
+        Already rendered at 3x scale (1170px width) for HD quality,
+        no additional upscaling needed.
+        """
+        pages = self.render_paginated()
+        result = []
+
+        for img in pages:
+            # Convert to base64 (already HD at 3x scale)
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG", optimize=True)
+            buffer.seek(0)
+            result.append(base64.b64encode(buffer.read()).decode('utf-8'))
+
+        return result

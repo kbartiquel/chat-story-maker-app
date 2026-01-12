@@ -1,6 +1,6 @@
 //
 //  PrimaryButton.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Full-width rounded button with loading state
 //
@@ -10,7 +10,7 @@ import SwiftUI
 struct PrimaryButton: View {
     let title: String
     var icon: String? = nil
-    var color: Color = .blue
+    var color: Color = .accentColor
     var isLoading: Bool = false
     var isDisabled: Bool = false
     let action: () -> Void

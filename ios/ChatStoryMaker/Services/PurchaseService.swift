@@ -1,6 +1,6 @@
 //
 //  PurchaseService.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Premium features - Currently bypassed (all features free)
 //

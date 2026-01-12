@@ -1,6 +1,6 @@
 //
 //  VideoExportService.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  AVFoundation video export with sound effects
 //

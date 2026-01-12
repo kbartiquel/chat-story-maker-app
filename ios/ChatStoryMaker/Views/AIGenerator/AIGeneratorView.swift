@@ -1,6 +1,6 @@
 //
 //  AIGeneratorView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  AI-powered story generation screen
 //
@@ -16,6 +16,11 @@ struct AIGeneratorView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    // Credits badge (only show for non-premium users)
+                    if !viewModel.isPremium {
+                        creditsBadge
+                    }
+
                     // Prompt Section
                     PromptInputView(prompt: $viewModel.prompt)
 
@@ -58,9 +63,34 @@ struct AIGeneratorView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "Unknown error")
             }
+            .fullScreenCover(isPresented: $viewModel.showPaywall) {
+                PaywallView(isLimitTriggered: true)
+            }
             .onAppear {
                 viewModel.setModelContext(modelContext)
             }
+        }
+    }
+
+    private var creditsBadge: some View {
+        Button {
+            viewModel.showPaywall = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 14))
+                Text("\(viewModel.remainingGenerations) generations left")
+                    .font(.system(size: 14, weight: .medium))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+            }
+            .foregroundColor(viewModel.remainingGenerations > 0 ? .purple : .red)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(viewModel.remainingGenerations > 0 ? Color.purple.opacity(0.1) : Color.red.opacity(0.1))
+            )
         }
     }
 
@@ -219,7 +249,7 @@ struct GenrePickerView: View {
                         ChipButton(
                             title: genre.displayName,
                             isSelected: selectedGenre == genre && !showCustomInput,
-                            color: .blue
+                            color: .accentColor
                         ) {
                             selectedGenre = genre
                             showCustomInput = false
@@ -231,7 +261,7 @@ struct GenrePickerView: View {
                     ChipButton(
                         title: "Custom",
                         isSelected: showCustomInput,
-                        color: .blue
+                        color: .accentColor
                     ) {
                         showCustomInput = true
                         selectedGenre = nil

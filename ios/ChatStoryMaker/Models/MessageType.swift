@@ -1,6 +1,6 @@
 //
 //  MessageType.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Enums for message types, delivery status, reactions, and receipt styles
 //
