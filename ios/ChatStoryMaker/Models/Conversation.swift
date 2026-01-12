@@ -1,6 +1,6 @@
 //
 //  Conversation.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Conversation model containing characters and messages
 //

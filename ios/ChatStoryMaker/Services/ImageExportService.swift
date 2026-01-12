@@ -1,6 +1,6 @@
 //
 //  ImageExportService.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Export conversation as screenshot image
 //

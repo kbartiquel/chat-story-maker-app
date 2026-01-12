@@ -1,6 +1,6 @@
 //
 //  Folder.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Folder model for organizing conversations
 //

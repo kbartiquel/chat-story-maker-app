@@ -1,6 +1,6 @@
 //
 //  ConversationRowView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  List row component for displaying a conversation
 //
@@ -18,7 +18,7 @@ struct ConversationRowView: View {
         HStack(spacing: 12) {
             // Chat type icon
             Circle()
-                .fill(conversation.theme.senderBubbleColor)
+                .fill(Color.accentColor)
                 .frame(width: 50, height: 50)
                 .overlay(
                     Image(systemName: chatIcon)

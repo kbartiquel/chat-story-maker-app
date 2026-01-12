@@ -1,4 +1,4 @@
-# ChatStoryMaker Server Dependencies
+# Textory Server Dependencies
 
 # Web framework
 fastapi==0.109.0

@@ -1,6 +1,6 @@
 //
 //  CharacterEditorView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Edit character name, color, and side
 //
@@ -14,7 +14,7 @@ struct CharacterEditorView: View {
     var onSave: (() -> Void)?
 
     @State private var name: String = ""
-    @State private var selectedColorHex: String = "#007AFF"
+    @State private var selectedColorHex: String = "#1DB678"
     @State private var isMe: Bool = true
     @State private var selectedEmoji: String = ""
     @State private var selectedPhoto: PhotosPickerItem?
@@ -27,8 +27,8 @@ struct CharacterEditorView: View {
     ]
 
     private let presetColors: [String] = [
+        "#1DB678", // Textory Green
         "#007AFF", // Blue
-        "#34C759", // Green
         "#FF3B30", // Red
         "#FF9500", // Orange
         "#AF52DE", // Purple
@@ -61,8 +61,8 @@ struct CharacterEditorView: View {
                             Label("Choose Photo", systemImage: "photo.on.rectangle")
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
-                                .background(Color.blue.opacity(0.1))
-                                .foregroundColor(.blue)
+                                .background(Color.accentColor.opacity(0.1))
+                                .foregroundColor(.accentColor)
                                 .cornerRadius(8)
                         }
                         .onChange(of: selectedPhoto) { _, newValue in
@@ -122,7 +122,7 @@ struct CharacterEditorView: View {
                                     .frame(width: 40, height: 40)
                                     .background(
                                         Circle()
-                                            .fill(selectedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
+                                            .fill(selectedEmoji == emoji ? Color.accentColor.opacity(0.2) : Color.clear)
                                     )
                                     .overlay(
                                         Circle()

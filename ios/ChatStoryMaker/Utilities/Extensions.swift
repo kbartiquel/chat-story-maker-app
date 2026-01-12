@@ -1,6 +1,6 @@
 //
 //  Extensions.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Utility extensions
 //

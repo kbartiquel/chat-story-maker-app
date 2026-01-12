@@ -1,6 +1,6 @@
 //
 //  ExportHistoryView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  View to display export history
 //
@@ -87,7 +87,7 @@ struct ExportHistoryView: View {
                         } label: {
                             Label("Share", systemImage: "square.and.arrow.up")
                         }
-                        .tint(.blue)
+                        .tint(.accentColor)
                     }
             }
         }
@@ -358,7 +358,7 @@ struct ExportHistoryTabView: View {
                         } label: {
                             Label("Share", systemImage: "square.and.arrow.up")
                         }
-                        .tint(.blue)
+                        .tint(.accentColor)
                     }
             }
         }

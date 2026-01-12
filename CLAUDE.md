@@ -1,4 +1,4 @@
-# ChatStoryMaker (ChatTale)
+# Textory
 
 iOS app for creating fake text message conversations and exporting them as videos/screenshots for TikTok, Instagram, and YouTube content creators.
 
@@ -35,6 +35,8 @@ iOS app for creating fake text message conversations and exporting them as video
   - Typing indicator for received messages
   - Sound effects (send.mp3/receive.mp3)
 - **Screenshot export**: Static image with quality options
+  - **Long Screenshot mode**: One tall image containing all messages (for scrolling/panning in video edits)
+  - **Range Selection mode**: User selects start/end messages to export specific portion
 - **Formats**: TikTok (9:16), Instagram (1:1), YouTube (16:9)
 - **Dark mode** option for exports
 - **Export History**:
@@ -71,7 +73,7 @@ TabView {
 
 ## Architecture
 
-### Models (`ios/ChatStoryMaker/Models/`)
+### Models (`ios/Textory/Models/`)
 | File | Purpose |
 |------|---------|
 | `Conversation.swift` | Main container with characters, messages, theme, folder, isGroupChat |
@@ -83,7 +85,7 @@ TabView {
 | `ExportSettings.swift` | Video/screenshot export options |
 | `ExportHistory.swift` | SwiftData model for tracking past exports |
 
-### Views (`ios/ChatStoryMaker/Views/`)
+### Views (`ios/Textory/Views/`)
 
 **Home**
 - `HomeView.swift` - Main list with search, folders, swipe actions
@@ -114,7 +116,7 @@ TabView {
 - `NewConversationView.swift` - Create new conversation
 - `CharacterEditorView.swift` - Edit character with photo picker
 
-### ViewModels (`ios/ChatStoryMaker/ViewModels/`)
+### ViewModels (`ios/Textory/ViewModels/`)
 | File | Purpose |
 |------|---------|
 | `ConversationViewModel.swift` | CRUD conversations, folders, search, duplicate |
@@ -123,7 +125,7 @@ TabView {
 | `AIGeneratorViewModel.swift` | AI generation with custom genre/mood, group name handling |
 | `SettingsViewModel.swift` | App settings management |
 
-### Services (`ios/ChatStoryMaker/Services/`)
+### Services (`ios/Textory/Services/`)
 | File | Purpose |
 |------|---------|
 | `VideoExportService.swift` | On-device AVAssetWriter rendering (backup) |
@@ -295,7 +297,7 @@ All premium features bypassed - app is fully free:
 
 ## File Structure
 ```
-ChatStoryMaker/
+Textory/
 ├── CLAUDE.md                 <- This file (technical reference)
 ├── server/
 │   ├── main.py               <- FastAPI server
@@ -308,9 +310,9 @@ ChatStoryMaker/
 │       ├── send.mp3
 │       └── receive.mp3
 └── ios/
-    ├── ChatStoryMaker.xcodeproj
-    └── ChatStoryMaker/
-        ├── ChatStoryMakerApp.swift
+    ├── Textory.xcodeproj
+    └── Textory/
+        ├── TextoryApp.swift
         ├── ContentView.swift
         ├── Models/
         ├── Views/

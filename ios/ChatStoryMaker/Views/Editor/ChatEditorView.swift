@@ -1,6 +1,6 @@
 //
 //  ChatEditorView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Main chat editor for editing a conversation
 //
@@ -162,7 +162,7 @@ struct ChatEditorView: View {
                 Button(action: { dismiss() }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.accentColor)
                 }
                 Spacer()
             }
@@ -174,12 +174,12 @@ struct ChatEditorView: View {
                     Button(action: { isReorderMode.toggle() }) {
                         Image(systemName: isReorderMode ? "checkmark" : "arrow.up.arrow.down")
                             .font(.system(size: 18))
-                            .foregroundColor(.blue)
+                            .foregroundColor(.accentColor)
                     }
                     Button(action: { viewModel.showingExport = true }) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 20))
-                            .foregroundColor(.blue)
+                            .foregroundColor(.accentColor)
                     }
                 }
             }

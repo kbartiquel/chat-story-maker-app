@@ -1,6 +1,6 @@
 //
 //  ExportViewModel.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  ViewModel for export settings and video/image generation
 //
@@ -19,6 +19,7 @@ class ExportViewModel {
     var exportedImage: UIImage?
     var showShareSheet = false
     var errorMessage: String?
+    var showPaywall = false
 
     // Export history record to be saved after successful export
     var lastExportHistory: ExportHistory?
@@ -29,6 +30,20 @@ class ExportViewModel {
 
     init(conversation: Conversation) {
         self.conversation = conversation
+    }
+
+    // MARK: - Limits
+
+    var hasReachedVideoExportLimit: Bool {
+        LimitTrackingService.shared.hasReachedVideoExportLimit()
+    }
+
+    var remainingVideoExports: Int {
+        LimitTrackingService.shared.getRemainingVideoExports()
+    }
+
+    var isPremium: Bool {
+        SubscriptionService.shared.hasPremiumAccess()
     }
 
     /// Create export history record after successful export
@@ -107,6 +122,14 @@ class ExportViewModel {
 
     func exportVideo() async {
         guard canExport else { return }
+
+        // Check limits first (only for video exports)
+        if hasReachedVideoExportLimit {
+            await MainActor.run {
+                showPaywall = true
+            }
+            return
+        }
 
         // Update UI state on main actor first
         await MainActor.run {
@@ -195,6 +218,7 @@ class ExportViewModel {
             showShareSheet = true
             lastExportHistory = createExportHistory(localPath: url.path)
             HapticManager.notification(.success)
+            LimitTrackingService.shared.recordVideoExport()
             AnalyticsService.shared.trackExportCompleted(format: "video", durationSeconds: 0)
         } catch {
             errorMessage = error.localizedDescription
@@ -223,6 +247,7 @@ class ExportViewModel {
                 self.showShareSheet = true
                 self.lastExportHistory = self.createExportHistory(videoURL: url, localPath: url.path)
                 HapticManager.notification(.success)
+                LimitTrackingService.shared.recordVideoExport()
                 AnalyticsService.shared.trackExportCompleted(format: "video", durationSeconds: 0)
             }
         } catch {

@@ -1,6 +1,6 @@
 //
 //  ServerExportService.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Service for rendering videos via the Python server API
 //

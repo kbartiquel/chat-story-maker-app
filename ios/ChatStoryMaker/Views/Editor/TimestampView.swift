@@ -1,6 +1,6 @@
 //
 //  TimestampView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  iMessage-style centered timestamp divider
 //

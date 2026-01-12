@@ -1,6 +1,6 @@
 //
 //  Character.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Character model for conversation participants
 //

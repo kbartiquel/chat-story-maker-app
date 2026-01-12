@@ -1,6 +1,6 @@
 #
 # models.py
-# ChatStoryMaker Server
+# Textory Server
 #
 # Pydantic models for API request/response
 #

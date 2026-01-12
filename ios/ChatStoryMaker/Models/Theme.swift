@@ -1,6 +1,6 @@
 //
 //  Theme.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  iMessage theme definition
 //

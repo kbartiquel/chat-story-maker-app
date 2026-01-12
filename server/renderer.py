@@ -1,6 +1,6 @@
 #
 # renderer.py
-# ChatStoryMaker Server
+# Textory Server
 #
 # Video rendering engine - Authentic iMessage style
 #

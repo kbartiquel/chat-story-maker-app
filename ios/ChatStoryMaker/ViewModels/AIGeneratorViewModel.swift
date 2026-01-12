@@ -1,6 +1,6 @@
 //
 //  AIGeneratorViewModel.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  ViewModel for AI story generation
 //
@@ -22,9 +22,24 @@ class AIGeneratorViewModel {
     var errorMessage: String?
     var generatedConversation: Conversation?
     var showingEditor = false
+    var showPaywall = false
 
     private let aiService = AIService()
     private var modelContext: ModelContext?
+
+    // MARK: - Limits
+
+    var hasReachedLimit: Bool {
+        LimitTrackingService.shared.hasReachedAIGenerationLimit()
+    }
+
+    var remainingGenerations: Int {
+        LimitTrackingService.shared.getRemainingAIGenerations()
+    }
+
+    var isPremium: Bool {
+        SubscriptionService.shared.hasPremiumAccess()
+    }
 
     var isGroupChat: Bool {
         numCharacters > 2
@@ -57,6 +72,14 @@ class AIGeneratorViewModel {
     func generateStory() async {
         guard canGenerate else { return }
 
+        // Check limits first
+        if hasReachedLimit {
+            await MainActor.run {
+                showPaywall = true
+            }
+            return
+        }
+
         isGenerating = true
         errorMessage = nil
 
@@ -78,6 +101,8 @@ class AIGeneratorViewModel {
         do {
             let story = try await aiService.generateConversation(request: request)
             await MainActor.run {
+                // Record usage after successful generation
+                LimitTrackingService.shared.recordAIGeneration()
                 createConversation(from: story)
                 AnalyticsService.shared.trackAIGenerationCompleted(messageCount: story.messages.count)
             }

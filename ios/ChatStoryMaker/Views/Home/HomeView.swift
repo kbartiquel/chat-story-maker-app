@@ -1,6 +1,6 @@
 //
 //  HomeView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Main view displaying list of saved conversations
 //
@@ -126,7 +126,7 @@ struct HomeView: View {
             } label: {
                 Label("Duplicate", systemImage: "doc.on.doc")
             }
-            .tint(.blue)
+            .tint(.accentColor)
 
             Button {
                 movingConversation = conversation
@@ -179,7 +179,7 @@ struct MoveToFolderView: View {
                         Spacer()
                         if conversation.folderID == nil {
                             Image(systemName: "checkmark")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.accentColor)
                         }
                     }
                 }
@@ -197,7 +197,7 @@ struct MoveToFolderView: View {
                             Spacer()
                             if conversation.folderID == folder.id {
                                 Image(systemName: "checkmark")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.accentColor)
                             }
                         }
                     }

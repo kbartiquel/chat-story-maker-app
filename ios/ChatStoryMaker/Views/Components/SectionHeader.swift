@@ -1,6 +1,6 @@
 //
 //  SectionHeader.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Gray uppercase text for section titles
 //

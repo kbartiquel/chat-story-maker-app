@@ -1,6 +1,6 @@
 //
 //  ChatHeaderView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  iMessage-style chat header with contact/group info
 //

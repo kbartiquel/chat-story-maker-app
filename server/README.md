@@ -1,6 +1,6 @@
-# ChatStoryMaker Server
+# Textory Server
 
-Python video rendering server for ChatStoryMaker iOS app.
+Python video rendering server for Textory iOS app.
 
 ## Local Development
 

@@ -1,6 +1,6 @@
 //
 //  ExportSettings.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Video and screenshot export settings and formats
 //

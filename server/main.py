@@ -1,6 +1,6 @@
 #
 # main.py
-# ChatStoryMaker Server
+# Textory Server
 #
 # FastAPI server for video rendering
 #
@@ -25,7 +25,7 @@ from ai_service import generate_chat_story, get_ai_service_status, AIServiceErro
 
 # Initialize FastAPI
 app = FastAPI(
-    title="ChatStoryMaker API",
+    title="Textory API",
     description="Video rendering API for chat story videos",
     version="1.0.0"
 )
@@ -76,7 +76,7 @@ async def root():
     """Health check endpoint."""
     return {
         "status": "ok",
-        "service": "ChatStoryMaker Video Renderer",
+        "service": "Textory Video Renderer",
         "version": "1.0.0"
     }
 

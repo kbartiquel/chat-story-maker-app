@@ -1,6 +1,6 @@
 //
 //  FolderManagementView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Create, edit, and delete folders
 //
@@ -109,7 +109,7 @@ struct FolderEditorView: View {
     let onSave: (String, String) -> Void
 
     @State private var name: String = ""
-    @State private var selectedColorHex: String = "#007AFF"
+    @State private var selectedColorHex: String = "#1DB678"
 
     var body: some View {
         NavigationStack {

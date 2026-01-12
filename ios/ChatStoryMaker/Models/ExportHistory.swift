@@ -1,6 +1,6 @@
 //
 //  ExportHistory.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  Model to store export history records
 //

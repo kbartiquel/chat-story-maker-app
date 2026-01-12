@@ -1,6 +1,6 @@
 //
 //  MessageReactionsView.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  iMessage-style reaction pills that overlap message bubble corners
 //

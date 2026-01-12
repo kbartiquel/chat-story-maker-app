@@ -1,6 +1,6 @@
 //
 //  SettingsViewModel.swift
-//  ChatStoryMaker
+//  Textory
 //
 //  ViewModel for settings and premium state
 //
