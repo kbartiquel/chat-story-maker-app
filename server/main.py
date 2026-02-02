@@ -34,6 +34,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Render queue limiter - max 2 concurrent renders to prevent OOM on 2GB RAM
+MAX_CONCURRENT_RENDERS = 2
+render_semaphore = asyncio.Semaphore(MAX_CONCURRENT_RENDERS)
+render_queue_count = 0  # Track how many jobs are waiting
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -89,6 +94,18 @@ async def root():
 async def health():
     """Health check for uptime monitoring."""
     return {"status": "healthy"}
+
+
+@app.get("/queue-status")
+async def queue_status():
+    """Get current render queue status."""
+    active_renders = MAX_CONCURRENT_RENDERS - render_semaphore._value
+    return {
+        "max_concurrent": MAX_CONCURRENT_RENDERS,
+        "active_renders": active_renders,
+        "queue_waiting": render_queue_count,
+        "available_slots": render_semaphore._value
+    }
 
 
 # ===========================================
@@ -260,74 +277,82 @@ async def render_screenshot(request: ScreenshotRequest):
 
 
 async def render_video(job_id: str, request: RenderRequest):
-    """Background task to render the video."""
+    """Background task to render the video with queue limiting."""
     import traceback
     import sys
+    global render_queue_count
 
-    print(f"[RENDER] Starting job {job_id}", flush=True)
+    render_queue_count += 1
+    queue_position = render_queue_count
+    print(f"[RENDER] Job {job_id} queued (position ~{queue_position}, waiting for semaphore)", flush=True)
 
-    try:
-        jobs[job_id]["status"] = JobStatus.processing
-        print(f"[RENDER] Job {job_id} status set to processing", flush=True)
+    # Wait for semaphore - limits concurrent renders to MAX_CONCURRENT_RENDERS
+    async with render_semaphore:
+        render_queue_count -= 1
+        print(f"[RENDER] Job {job_id} acquired semaphore, starting render", flush=True)
 
-        # Progress callback
-        def update_progress(progress: float):
-            jobs[job_id]["progress"] = progress
-            if int(progress * 100) % 10 == 0:
-                print(f"[RENDER] Job {job_id} progress: {progress:.1%}", flush=True)
+        try:
+            jobs[job_id]["status"] = JobStatus.processing
+            print(f"[RENDER] Job {job_id} status set to processing", flush=True)
 
-        # Create renderer and render video
-        print(f"[RENDER] Creating VideoRenderer for job {job_id}", flush=True)
-        renderer = VideoRenderer(request)
-        print(f"[RENDER] VideoRenderer created, starting render", flush=True)
+            # Progress callback
+            def update_progress(progress: float):
+                jobs[job_id]["progress"] = progress
+                if int(progress * 100) % 10 == 0:
+                    print(f"[RENDER] Job {job_id} progress: {progress:.1%}", flush=True)
 
-        # Run rendering in thread pool to not block event loop
-        loop = asyncio.get_event_loop()
-        video_path = await loop.run_in_executor(
-            None,
-            lambda: renderer.render(progress_callback=update_progress)
-        )
+            # Create renderer and render video
+            print(f"[RENDER] Creating VideoRenderer for job {job_id}", flush=True)
+            renderer = VideoRenderer(request)
+            print(f"[RENDER] VideoRenderer created, starting render", flush=True)
 
-        print(f"[RENDER] Job {job_id} render complete, video at: {video_path}", flush=True)
+            # Run rendering in thread pool to not block event loop
+            loop = asyncio.get_event_loop()
+            video_path = await loop.run_in_executor(
+                None,
+                lambda: renderer.render(progress_callback=update_progress)
+            )
 
-        jobs[job_id]["local_path"] = video_path
+            print(f"[RENDER] Job {job_id} render complete, video at: {video_path}", flush=True)
 
-        # Upload to Cloudinary if configured
-        if CLOUDINARY_CONFIGURED:
-            try:
-                print(f"[RENDER] Uploading to Cloudinary", flush=True)
-                result = cloudinary.uploader.upload(
-                    video_path,
-                    resource_type="video",
-                    folder="chatstorymaker",
-                    public_id=job_id
-                )
-                jobs[job_id]["video_url"] = result["secure_url"]
+            jobs[job_id]["local_path"] = video_path
 
-                # Clean up local file after upload
-                os.remove(video_path)
-                jobs[job_id]["local_path"] = None
-                print(f"[RENDER] Cloudinary upload complete", flush=True)
-            except Exception as e:
-                # If Cloudinary fails, keep local file
-                print(f"[RENDER] Cloudinary upload failed: {e}", flush=True)
+            # Upload to Cloudinary if configured
+            if CLOUDINARY_CONFIGURED:
+                try:
+                    print(f"[RENDER] Uploading to Cloudinary", flush=True)
+                    result = cloudinary.uploader.upload(
+                        video_path,
+                        resource_type="video",
+                        folder="chatstorymaker",
+                        public_id=job_id
+                    )
+                    jobs[job_id]["video_url"] = result["secure_url"]
+
+                    # Clean up local file after upload
+                    os.remove(video_path)
+                    jobs[job_id]["local_path"] = None
+                    print(f"[RENDER] Cloudinary upload complete", flush=True)
+                except Exception as e:
+                    # If Cloudinary fails, keep local file
+                    print(f"[RENDER] Cloudinary upload failed: {e}", flush=True)
+                    jobs[job_id]["video_url"] = f"/download/{job_id}"
+            else:
+                # Local development - use download endpoint
                 jobs[job_id]["video_url"] = f"/download/{job_id}"
-        else:
-            # Local development - use download endpoint
-            jobs[job_id]["video_url"] = f"/download/{job_id}"
 
-        jobs[job_id]["status"] = JobStatus.completed
-        jobs[job_id]["progress"] = 1.0
-        print(f"[RENDER] Job {job_id} completed successfully", flush=True)
+            jobs[job_id]["status"] = JobStatus.completed
+            jobs[job_id]["progress"] = 1.0
+            print(f"[RENDER] Job {job_id} completed successfully", flush=True)
 
-    except Exception as e:
-        error_trace = traceback.format_exc()
-        print(f"[RENDER ERROR] Job {job_id} failed: {e}", flush=True)
-        print(f"[RENDER ERROR] Traceback:\n{error_trace}", flush=True)
-        sys.stdout.flush()
-        sys.stderr.flush()
-        jobs[job_id]["status"] = JobStatus.failed
-        jobs[job_id]["error"] = str(e)
+        except Exception as e:
+            error_trace = traceback.format_exc()
+            print(f"[RENDER ERROR] Job {job_id} failed: {e}", flush=True)
+            print(f"[RENDER ERROR] Traceback:\n{error_trace}", flush=True)
+            sys.stdout.flush()
+            sys.stderr.flush()
+            jobs[job_id]["status"] = JobStatus.failed
+            jobs[job_id]["error"] = str(e)
 
 
 # Cleanup task
