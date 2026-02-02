@@ -1046,11 +1046,37 @@ class VideoRenderer:
 
         highlight_color = (128, 128, 128)
 
-        # Draw input field with border
-        input_height = int(32 * self.scale)
+        # Draw input field with border - supports multi-line wrapping
         input_margin = int(8 * self.scale)
-        input_y = keyboard_y - input_height - int(10 * self.scale)
         input_width = self.phone_width - int(54 * self.scale)
+        input_font = get_font(int(15 * self.scale))
+        line_height = int(20 * self.scale)
+        padding_vertical = int(8 * self.scale)
+        text_area_width = input_width - int(24 * self.scale)  # Account for padding
+
+        # Wrap text to multiple lines if needed
+        wrapped_lines = []
+        if typing_text:
+            display_text = typing_text + "|"
+            # Simple word wrapping
+            words = display_text.split(' ')
+            current_line = ""
+            for word in words:
+                test_line = current_line + (" " if current_line else "") + word
+                bbox = draw.textbbox((0, 0), test_line, font=input_font)
+                if bbox[2] - bbox[0] <= text_area_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        wrapped_lines.append(current_line)
+                    # If single word is too long, force it on its own line
+                    current_line = word
+            if current_line:
+                wrapped_lines.append(current_line)
+
+        num_lines = max(1, len(wrapped_lines))
+        input_height = padding_vertical * 2 + line_height * num_lines
+        input_y = keyboard_y - input_height - int(10 * self.scale)
 
         # Fill background
         draw.rounded_rectangle(
@@ -1066,21 +1092,22 @@ class VideoRenderer:
             width=1
         )
 
-        input_font = get_font(int(15 * self.scale))
-        text_y_pos = input_y + (input_height - int(15 * self.scale)) // 2
+        text_x = input_margin + int(12 * self.scale)
 
-        if typing_text:
-            display_text = typing_text + "|"
+        if typing_text and wrapped_lines:
             with Pilmoji(img) as pilmoji:
-                pilmoji.text(
-                    (input_margin + int(12 * self.scale), text_y_pos),
-                    display_text,
-                    fill=text_color,
-                    font=input_font
-                )
+                for i, line in enumerate(wrapped_lines):
+                    text_y_pos = input_y + padding_vertical + i * line_height
+                    pilmoji.text(
+                        (text_x, text_y_pos),
+                        line,
+                        fill=text_color,
+                        font=input_font
+                    )
         else:
+            text_y_pos = input_y + (input_height - int(15 * self.scale)) // 2
             draw.text(
-                (input_margin + int(12 * self.scale), text_y_pos),
+                (text_x, text_y_pos),
                 "iMessage",
                 fill=(128, 128, 128),
                 font=input_font
