@@ -478,7 +478,9 @@ class VideoRenderer:
                     progress_callback(message_base_progress + 0.8 * message_progress_range)
 
             else:
-                typing_duration = min(max(len(message.text) / 30.0, 0.8), 1.5)  # Faster typing indicator
+                # Realistic typing: ~4 chars/second, with min 1s and max 6s
+                # Short msg (20 chars) = ~1.5s, Medium (60 chars) = ~3s, Long (120 chars) = ~5s
+                typing_duration = min(max(len(message.text) / 20.0, 1.0), 6.0)
                 typing_frames = int(typing_duration * FPS)
 
                 frame = self.render_frame(
