@@ -72,7 +72,7 @@ TYPING_SPEEDS = {
     "fast": 0.06,
 }
 
-FPS = 30
+FPS = 24  # Reduced from 30 for faster rendering
 SUPERSAMPLE_SCALE = 1  # Disabled supersampling to reduce memory (was 2)
 
 # iMessage specific colors
@@ -400,8 +400,8 @@ class VideoRenderer:
             '-r', str(FPS),
             '-i', '-',  # Read from pipe
             '-c:v', 'libx264',
-            '-preset', 'fast',  # Faster encoding, less memory
-            '-crf', '23',  # Slightly lower quality but faster
+            '-preset', 'ultrafast',  # Fastest encoding
+            '-crf', '28',  # Lower quality but much faster
             '-pix_fmt', 'yuv420p',
             temp_video_path
         ]
@@ -478,7 +478,7 @@ class VideoRenderer:
                     progress_callback(message_base_progress + 0.8 * message_progress_range)
 
             else:
-                typing_duration = min(max(len(message.text) / 20.0, 1.5), 2.5)
+                typing_duration = min(max(len(message.text) / 30.0, 0.8), 1.5)  # Faster typing indicator
                 typing_frames = int(typing_duration * FPS)
 
                 frame = self.render_frame(
@@ -502,7 +502,7 @@ class VideoRenderer:
                     progress_callback(message_base_progress + 0.8 * message_progress_range)
 
             # Reading pause
-            reading_time = min(max(len(message.text) / 25.0, 1.5), 3.0)
+            reading_time = min(max(len(message.text) / 40.0, 0.8), 2.0)  # Faster pacing
             pause_frames = int(reading_time * FPS)
 
             frame = self.render_frame(
