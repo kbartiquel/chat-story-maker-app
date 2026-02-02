@@ -1,22 +1,22 @@
 # Textery Server Dependencies
 
 # Web framework
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
 
 # Image processing
-Pillow==10.2.0
-pilmoji==2.0.4  # Emoji rendering in Pillow
+Pillow>=10.4.0
+pilmoji>=2.0.4  # Emoji rendering in Pillow
 
 # Video processing
-moviepy==1.0.3
-numpy==1.26.3
+moviepy>=1.0.3
+numpy>=1.26.3
 
 # Cloud storage (optional)
-cloudinary==1.38.0
+cloudinary>=1.38.0
 
 # Data validation
-pydantic==2.5.3
+pydantic>=2.5.3
 
 # AI Services
 openai>=1.0.0
@@ -24,4 +24,4 @@ anthropic>=0.18.0
 python-dotenv>=1.0.0
 
 # For production
-gunicorn==21.2.0
+gunicorn>=21.2.0
