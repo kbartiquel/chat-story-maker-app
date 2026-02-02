@@ -261,15 +261,25 @@ async def render_screenshot(request: ScreenshotRequest):
 
 async def render_video(job_id: str, request: RenderRequest):
     """Background task to render the video."""
+    import traceback
+    import sys
+
+    print(f"[RENDER] Starting job {job_id}", flush=True)
+
     try:
         jobs[job_id]["status"] = JobStatus.processing
+        print(f"[RENDER] Job {job_id} status set to processing", flush=True)
 
         # Progress callback
         def update_progress(progress: float):
             jobs[job_id]["progress"] = progress
+            if int(progress * 100) % 10 == 0:
+                print(f"[RENDER] Job {job_id} progress: {progress:.1%}", flush=True)
 
         # Create renderer and render video
+        print(f"[RENDER] Creating VideoRenderer for job {job_id}", flush=True)
         renderer = VideoRenderer(request)
+        print(f"[RENDER] VideoRenderer created, starting render", flush=True)
 
         # Run rendering in thread pool to not block event loop
         loop = asyncio.get_event_loop()
@@ -278,11 +288,14 @@ async def render_video(job_id: str, request: RenderRequest):
             lambda: renderer.render(progress_callback=update_progress)
         )
 
+        print(f"[RENDER] Job {job_id} render complete, video at: {video_path}", flush=True)
+
         jobs[job_id]["local_path"] = video_path
 
         # Upload to Cloudinary if configured
         if CLOUDINARY_CONFIGURED:
             try:
+                print(f"[RENDER] Uploading to Cloudinary", flush=True)
                 result = cloudinary.uploader.upload(
                     video_path,
                     resource_type="video",
@@ -294,9 +307,10 @@ async def render_video(job_id: str, request: RenderRequest):
                 # Clean up local file after upload
                 os.remove(video_path)
                 jobs[job_id]["local_path"] = None
+                print(f"[RENDER] Cloudinary upload complete", flush=True)
             except Exception as e:
                 # If Cloudinary fails, keep local file
-                print(f"Cloudinary upload failed: {e}")
+                print(f"[RENDER] Cloudinary upload failed: {e}", flush=True)
                 jobs[job_id]["video_url"] = f"/download/{job_id}"
         else:
             # Local development - use download endpoint
@@ -304,11 +318,16 @@ async def render_video(job_id: str, request: RenderRequest):
 
         jobs[job_id]["status"] = JobStatus.completed
         jobs[job_id]["progress"] = 1.0
+        print(f"[RENDER] Job {job_id} completed successfully", flush=True)
 
     except Exception as e:
+        error_trace = traceback.format_exc()
+        print(f"[RENDER ERROR] Job {job_id} failed: {e}", flush=True)
+        print(f"[RENDER ERROR] Traceback:\n{error_trace}", flush=True)
+        sys.stdout.flush()
+        sys.stderr.flush()
         jobs[job_id]["status"] = JobStatus.failed
         jobs[job_id]["error"] = str(e)
-        print(f"Rendering failed for job {job_id}: {e}")
 
 
 # Cleanup task
