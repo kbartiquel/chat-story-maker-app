@@ -12,9 +12,10 @@ iOS app for creating fake text message conversations and exporting them as video
 ### Python Server
 - FastAPI + Uvicorn
 - Pillow + pilmoji (emoji support)
-- MoviePy for video encoding
+- ffmpeg for video encoding (streams frames, memory efficient)
 - OpenAI GPT / Anthropic Claude for AI generation
-- Deployable to Render.com (~$7/month)
+- Deployed on Render.com (Standard tier - $25/month, 2GB RAM)
+- Max 2 concurrent renders (queue limiter)
 
 ## Features Implemented
 
@@ -290,10 +291,18 @@ iMessage-style reactions overlap bubble corners:
 - Sender: `alignment: .topLeading`, offset `x: -8, y: -12`
 - Receiver: `alignment: .topTrailing`, offset `x: 8, y: -12`
 
-## Premium Features
-All premium features bypassed - app is fully free:
-- `PurchaseService.isPremium` always returns `true`
-- No paywall/RevenueCat integration
+## Premium Features & Subscriptions
+RevenueCat SDK integrated for subscription management:
+- API Key: `appl_xxogGQbwdYHFSXVQcHXhZOukkKb`
+- Entitlement: `premium`
+- Products: `chatstorymaker_annual`, `chatstorymaker_weekly`
+- Bundle ID: `com.kimbytes.chatstorymaker`
+
+Free tier limits:
+- 3 video exports
+- 5 AI generations
+
+Premium unlocks unlimited access.
 
 ## File Structure
 ```
@@ -332,20 +341,25 @@ Textery/
 - [x] AI Story Generation feature (OpenAI/Anthropic integration)
 - [x] Aptabase analytics integration
 - [x] Onboarding screens (4 animated pages)
-- [x] Paywall implementation (mock RevenueCat)
 - [x] App renamed from ChatStoryMaker to Textery
 - [x] Usage limits (3 free video exports, 5 free AI generations)
 - [x] Screenshot export with Long Screenshot + Paginated modes
+- [x] RevenueCat SDK integrated (replaced mock SubscriptionService)
 - [x] Free trial toggle removed (App Store compliance)
 - [x] Yearly subscription plan added to paywall
+- [x] StoreKit configuration file for simulator testing
+- [x] Server deployed to Render.com (Standard tier - 2GB RAM)
+- [x] iOS app updated with production URL: https://chat-story-maker.onrender.com
+- [x] Memory-efficient video renderer (streams to ffmpeg)
+- [x] Render queue limiter (max 2 concurrent renders)
+- [x] Input field text wrapping for long messages
 
 ### Remaining Tasks
-1. **Create App Icon** - Design and export for all sizes (1024x1024 for App Store)
-2. **Fix Export Screen** - Redesign/fix the export screen UI
-3. **Update Paywall UI** - Redesign paywall to be more visually appealing
-4. **RevenueCat Integration** - Replace mock with real SDK (lifetime $29.99, weekly $4.99, monthly $9.99, yearly $39.99)
+1. **App Store Connect Products** - Complete metadata for `chatstorymaker_annual`, `chatstorymaker_weekly`
+2. **Create App Icon** - Design and export for all sizes (1024x1024 for App Store)
+3. **Fix Export Screen** - Redesign/fix the export screen UI
+4. **Update Paywall UI** - More visually appealing design
 5. **Xcode Project Rename** - Rename folder/schemes/targets from ChatStoryMaker to Textery
 6. **App Store Submission Prep** - Screenshots, description, privacy policy, terms of service
-7. **Publish Backend on Render** - Deploy server, configure env vars, update iOS URLs
-8. **Testing** - End-to-end testing of AI, video export, paywall, onboarding
-9. **Video Export Enhancements** (Medium) - Key tap sounds, typing mistake simulation
+7. **Testing** - End-to-end testing of AI, video export, paywall, onboarding
+8. **Video Export Enhancements** (Low) - Key tap sounds, typing mistake simulation

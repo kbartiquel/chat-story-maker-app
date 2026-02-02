@@ -11,6 +11,11 @@
 - [x] Free trial toggle removed (App Store compliance)
 - [x] Yearly subscription plan added to paywall
 - [x] StoreKit configuration file for simulator testing
+- [x] Server deployed to Render.com (Standard tier - 2GB RAM)
+- [x] iOS app updated with production URL
+- [x] Memory-efficient video renderer (streams to ffmpeg)
+- [x] Render queue limiter (max 2 concurrent renders)
+- [x] Input field text wrapping for long messages
 
 ## In Progress
 
@@ -50,19 +55,13 @@
 - Privacy policy URL (https://kimbytes.com/textery/privacy.html)
 - Terms of service URL (https://kimbytes.com/textery/terms.html)
 
-### 7. Publish Backend on Render & Update App (Priority: High) - DONE
-- [x] Deploy Python server to Render.com
-- [x] Configure environment variables
-- [x] Update iOS app with production URL: https://chat-story-maker.onrender.com
-- [ ] Test all endpoints after deployment
-
-### 8. Testing
+### 7. Testing
 - [ ] Test full AI generation flow end-to-end
-- [ ] Test video export with server
+- [x] Test video export with server
 - [ ] Test paywall/purchase flow with Sandbox tester
 - [ ] Test onboarding on fresh install
 
-### 9. Video Export Enhancements (Priority: Low)
+### 8. Video Export Enhancements (Priority: Low)
 - [ ] Keyboard key sound: Add individual key tap sounds when typing
 - [ ] Keyboard mistake simulation: Simulate typos and corrections
 
@@ -78,4 +77,11 @@
 
 ### Server
 - Production: `https://chat-story-maker.onrender.com`
+- Tier: Standard ($25/month, 2GB RAM)
+- Queue: Max 2 concurrent renders
 - Local: `cd server && uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
+
+### Render Settings
+- Python: 3.11 (set via PYTHON_VERSION env var)
+- Start Command: `server/ $ uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Root Directory: `server/`
