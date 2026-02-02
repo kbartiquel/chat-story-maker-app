@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from pilmoji import Pilmoji
 import subprocess
 import tempfile
+import gc
 from typing import Optional, Callable
 from models import (
     RenderRequest, Message, Character, ChatTheme,
@@ -72,7 +73,7 @@ TYPING_SPEEDS = {
 }
 
 FPS = 30
-SUPERSAMPLE_SCALE = 2  # Render at 2x resolution for anti-aliasing
+SUPERSAMPLE_SCALE = 1  # Disabled supersampling to reduce memory (was 2)
 
 # iMessage specific colors
 IMESSAGE_GRAY = "#8E8E93"
@@ -420,6 +421,12 @@ class VideoRenderer:
             for _ in range(repeat):
                 ffmpeg_process.stdin.write(frame_bytes)
                 frame_count += 1
+            # Explicitly close images to free memory
+            frame_rgb.close()
+            frame.close()
+            # Periodic garbage collection
+            if frame_count % 30 == 0:
+                gc.collect()
 
         # Process each message
         for index, message in enumerate(self.messages):
@@ -638,9 +645,14 @@ class VideoRenderer:
         # Paste phone image onto main frame (centered)
         frame.paste(img, (self.phone_x, self.phone_y))
 
+        # Close intermediate image to free memory
+        img.close()
+
         # Downscale for anti-aliasing (supersampling)
         if SUPERSAMPLE_SCALE > 1:
+            old_frame = frame
             frame = frame.resize((self.width, self.height), Image.Resampling.LANCZOS)
+            old_frame.close()
 
         return frame
 
@@ -702,11 +714,13 @@ class VideoRenderer:
                     target_height = int(18 * self.scale)
                     aspect_ratio = video_icon.width / video_icon.height
                     target_width = int(target_height * aspect_ratio)
-                    video_icon = video_icon.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                    video_icon_resized = video_icon.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                    video_icon.close()  # Close original
 
                     video_x = self.phone_width - target_width - int(16 * self.scale)
                     video_y = debug_line_y - target_height // 2  # Centered on debug line
-                    img.paste(video_icon, (video_x, video_y), video_icon)
+                    img.paste(video_icon_resized, (video_x, video_y), video_icon_resized)
+                    video_icon_resized.close()  # Close resized
                 except Exception as e:
                     print(f"Failed to load video icon: {e}")
 
