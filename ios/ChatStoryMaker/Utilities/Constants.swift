@@ -28,7 +28,7 @@ enum Constants {
 enum Config {
     // Replace with your actual API keys
     static let claudeAPIKey = "YOUR_CLAUDE_API_KEY"
-    static let revenueCatAPIKey = "YOUR_REVENUECAT_API_KEY"
+    static let revenueCatAPIKey = "appl_xxogGQbwdYHFSXVQcHXhZOukkKb"
 
     enum Entitlements {
         static let premium = "premium"

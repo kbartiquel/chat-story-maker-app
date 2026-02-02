@@ -1,6 +1,6 @@
-# Textory Server
+# Textery Server
 
-Python video rendering server for Textory iOS app.
+Python video rendering server for Textery iOS app.
 
 ## Local Development
 

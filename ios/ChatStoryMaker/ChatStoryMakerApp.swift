@@ -9,6 +9,7 @@
 import SwiftUI
 import SwiftData
 import Aptabase
+import RevenueCat
 
 @main
 struct TextoryApp: App {
@@ -18,6 +19,10 @@ struct TextoryApp: App {
         // Initialize analytics
         AnalyticsService.shared.initialize()
         AnalyticsService.shared.trackAppLaunch()
+
+        // Initialize RevenueCat
+        Purchases.logLevel = .debug
+        Purchases.configure(withAPIKey: Config.revenueCatAPIKey)
 
         do {
             let schema = Schema([Conversation.self, Character.self, Message.self, Folder.self, ExportHistory.self])

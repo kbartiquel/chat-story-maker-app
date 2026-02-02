@@ -1,6 +1,6 @@
 //
-//  TextoryUITests.swift
-//  TextoryUITests
+//  TexteryUITests.swift
+//  TexteryUITests
 //
 
 import XCTest

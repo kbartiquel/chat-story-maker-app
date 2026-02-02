@@ -1,17 +1,17 @@
-# Textory - TODO for Tomorrow
+# Textery - TODO for Tomorrow
 
 ## Completed Today
 - [x] AI Story Generation feature (OpenAI/Anthropic integration)
 - [x] Aptabase analytics integration (App Key: A-US-7778178477)
 - [x] Onboarding screens (4 animated pages)
 - [x] Paywall implementation (mock RevenueCat)
-- [x] App renamed from ChatStoryMaker to Textory
+- [x] App renamed from ChatStoryMaker to Textery
 - [x] Usage limits (3 free video exports, 5 free AI generations)
 
 ## Ready for Tomorrow
 
 ### 1. Create App Icon (Priority: High)
-- Design Textory app icon
+- Design Textery app icon
 - Export for all required sizes (1024x1024 for App Store, plus device sizes)
 - Add to Assets.xcassets/AppIcon
 
@@ -19,24 +19,31 @@
 - Redesign/fix the export screen UI (current layout not right)
 - Review and improve export options layout
 
-### 3. Finalize Screenshot Export (Priority: High)
-- Complete screenshot/image export functionality
-- Ensure proper rendering and quality
-- **Two export modes for user to choose:**
-  - **Long Screenshot**: One tall image containing all messages (for scrolling in video edits)
-  - **Range Selection**: Let user select start/end messages to export specific portion
-- Add UI toggle/picker for selecting export mode
+### 3. ~~Finalize Screenshot Export~~ ✅ DONE
+- ~~Complete screenshot/image export functionality~~
+- ~~Ensure proper rendering and quality~~
+- **Two export modes implemented:**
+  - **Long Screenshot**: One tall image containing all messages
+  - **Paginated**: Auto-split into multiple screen-sized images
+- ~~Add UI toggle/picker for selecting export mode~~
 
 ### 4. RevenueCat Integration (Priority: High)
 - Replace mock `SubscriptionService.swift` with real RevenueCat SDK
 - Create products in App Store Connect:
-  - `com.kimbytes.textory.lifetime` - $29.99
-  - `com.kimbytes.textory.weekly` - $4.99/week (3-day trial)
-  - `com.kimbytes.textory.monthly` - $9.99/month (3-day trial)
-- Configure RevenueCat dashboard with Textory app
+  - `com.kimbytes.chatstorymaker.lifetime` - $29.99
+  - `com.kimbytes.chatstorymaker.weekly` - $4.99/week
+  - `com.kimbytes.chatstorymaker.monthly` - $9.99/month
+  - `com.kimbytes.chatstorymaker.yearly` - $39.99/year
+- Configure RevenueCat dashboard with Textery app
+
+### 4b. Update Paywall UI (Priority: High)
+- Redesign paywall to be more visually appealing
+- Improve plan selection cards layout
+- Add better visual hierarchy for pricing
+- Removed free trial toggle (App Store compliance)
 
 ### 5. Xcode Project Rename (Priority: High)
-- Rename Xcode project folder from `ChatStoryMaker` to `Textory`
+- Rename Xcode project folder from `ChatStoryMaker` to `Textery`
 - Update scheme names
 - Update target names
 - Update Info.plist display name

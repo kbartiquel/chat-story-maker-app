@@ -7,6 +7,6 @@
   "showPaywallOnStart": true,
   "paywallMonthly": false,
   "paywallWeekly": true,
-  "paywallLifetime": true,
-  "paywallYearly": false
+  "paywallLifetime": false,
+  "paywallYearly": true
 }

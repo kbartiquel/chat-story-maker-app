@@ -1,6 +1,6 @@
 #
 # renderer.py
-# Textory Server
+# Textery Server
 #
 # Video rendering engine - Authentic iMessage style
 #
@@ -84,6 +84,31 @@ def hex_to_rgb(hex_color: str) -> tuple:
     """Convert hex color to RGB tuple."""
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+
+def is_default_name(name: str) -> bool:
+    """Check if a name is a default placeholder like 'Person' or 'Person 1'."""
+    trimmed = name.strip().lower()
+    if trimmed == "person":
+        return True
+    if trimmed.startswith("person "):
+        suffix = trimmed[7:]  # len("person ") = 7
+        return suffix.isdigit()
+    return False
+
+
+def get_initials(name: str) -> str:
+    """Get initials from a name (up to 2 characters)."""
+    words = name.strip().split()
+    words = [w for w in words if w]
+
+    if len(words) >= 2:
+        # First letter of first two words
+        return (words[0][0] + words[1][0]).upper()
+    elif words:
+        # Just first letter or two from single word
+        return words[0][:2].upper()
+    return "?"
 
 
 def get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
@@ -242,15 +267,24 @@ class VideoRenderer:
                 pilmoji.text((emoji_x, emoji_y), character.avatar_emoji, font=emoji_font)
             return
 
-        # Fallback: draw initial letter
-        initial = character.name[0].upper() if character.name else "?"
-        initial_font = get_font(int(size * 0.45), bold=True)
-        bbox = draw.textbbox((0, 0), initial, font=initial_font)
-        initial_width = bbox[2] - bbox[0]
-        initial_height = bbox[3] - bbox[1]
-        initial_x = x + (size - initial_width) // 2
-        initial_y = y + (size - initial_height) // 2 - int(2 * self.scale)
-        draw.text((initial_x, initial_y), initial, fill=(255, 255, 255), font=initial_font)
+        # Fallback: draw initials for custom names, or just first letter for default names
+        if is_default_name(character.name):
+            # Default names like "Person 1" - show just first letter
+            text = character.name[0].upper() if character.name else "?"
+            font_scale = 0.45
+        else:
+            # Custom names - show full initials
+            text = get_initials(character.name)
+            # Adjust font size based on initials length
+            font_scale = 0.35 if len(text) > 1 else 0.45
+
+        initial_font = get_font(int(size * font_scale), bold=True)
+        bbox = draw.textbbox((0, 0), text, font=initial_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        text_x = x + (size - text_width) // 2
+        text_y = y + (size - text_height) // 2 - int(2 * self.scale)
+        draw.text((text_x, text_y), text, fill=(255, 255, 255), font=initial_font)
 
     def draw_stacked_avatars(
         self,
@@ -1362,15 +1396,24 @@ class ScreenshotRenderer:
                 pilmoji.text((emoji_x, emoji_y), character.avatar_emoji, font=emoji_font)
             return
 
-        # Fallback: draw initial letter
-        initial = character.name[0].upper() if character.name else "?"
-        initial_font = get_font(int(size * 0.45), bold=True)
-        bbox = draw.textbbox((0, 0), initial, font=initial_font)
-        initial_width = bbox[2] - bbox[0]
-        initial_height = bbox[3] - bbox[1]
-        initial_x = x + (size - initial_width) // 2
-        initial_y = y + (size - initial_height) // 2 - int(2 * self.scale)
-        draw.text((initial_x, initial_y), initial, fill=(255, 255, 255), font=initial_font)
+        # Fallback: draw initials for custom names, or just first letter for default names
+        if is_default_name(character.name):
+            # Default names like "Person 1" - show just first letter
+            text = character.name[0].upper() if character.name else "?"
+            font_scale = 0.45
+        else:
+            # Custom names - show full initials
+            text = get_initials(character.name)
+            # Adjust font size based on initials length
+            font_scale = 0.35 if len(text) > 1 else 0.45
+
+        initial_font = get_font(int(size * font_scale), bold=True)
+        bbox = draw.textbbox((0, 0), text, font=initial_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        text_x = x + (size - text_width) // 2
+        text_y = y + (size - text_height) // 2 - int(2 * self.scale)
+        draw.text((text_x, text_y), text, fill=(255, 255, 255), font=initial_font)
 
     def draw_stacked_avatars(
         self,

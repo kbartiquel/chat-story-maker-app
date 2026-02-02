@@ -137,15 +137,13 @@ Return response as ONLY valid JSON (no markdown, no backticks) with this structu
       "id": "1",
       "name": "Me",
       "is_me": true,
-      "suggested_color": "#007AFF",
-      "suggested_emoji": "emoji that fits character"
+      "suggested_color": "#007AFF"
     }},
     {{
       "id": "2",
       "name": "Character Name",
       "is_me": false,
-      "suggested_color": "#34C759",
-      "suggested_emoji": "emoji that fits character"
+      "suggested_color": "#34C759"
     }}
   ],
   "messages": [

@@ -12,7 +12,7 @@ struct SettingsView: View {
     @State private var soundsEnabled = AudioService.shared.soundsEnabled
     @State private var showOnboarding = false
     @State private var showPaywall = false
-    @State private var isPremium = SubscriptionService.shared.hasPremiumAccess()
+    @State private var isPremium = SubscriptionService.shared.hasPremiumAccessCached()
 
     var body: some View {
         NavigationStack {
@@ -112,13 +112,13 @@ struct SettingsView: View {
                         LimitTrackingService.shared.resetAllCounts()
                     }
 
-                    Button(isPremium ? "Revoke Premium (Test)" : "Grant Premium (Test)") {
-                        if isPremium {
-                            SubscriptionService.shared.revokePremiumAccess()
-                        } else {
-                            SubscriptionService.shared.grantPremiumAccess()
+                    Button("Refresh Premium Status") {
+                        Task {
+                            _ = await SubscriptionService.shared.hasPremiumAccess()
+                            await MainActor.run {
+                                isPremium = SubscriptionService.shared.hasPremiumAccessCached()
+                            }
                         }
-                        isPremium = SubscriptionService.shared.hasPremiumAccess()
                     }
                 } header: {
                     Text("Debug")
@@ -133,7 +133,7 @@ struct SettingsView: View {
                 PaywallView(showCloseButtonImmediately: true)
             }
             .onChange(of: showPaywall) { _, _ in
-                isPremium = SubscriptionService.shared.hasPremiumAccess()
+                isPremium = SubscriptionService.shared.hasPremiumAccessCached()
             }
         }
     }

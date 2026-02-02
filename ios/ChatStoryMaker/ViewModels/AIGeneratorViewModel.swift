@@ -38,7 +38,7 @@ class AIGeneratorViewModel {
     }
 
     var isPremium: Bool {
-        SubscriptionService.shared.hasPremiumAccess()
+        SubscriptionService.shared.hasPremiumAccessCached()
     }
 
     var isGroupChat: Bool {

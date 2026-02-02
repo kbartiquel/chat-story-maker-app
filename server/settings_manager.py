@@ -1,6 +1,6 @@
 #
 # settings_manager.py
-# Textory Server
+# Textery Server
 #
 # Manages paywall and app settings stored in JSON file
 #
@@ -13,7 +13,7 @@ from typing import Any
 # Thread lock for file operations
 _lock = Lock()
 
-# Default settings for Textory
+# Default settings for Textery
 DEFAULT_SETTINGS = {
     "videoExportLimit": 3,
     "aiGenerationLimit": 5,

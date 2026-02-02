@@ -1,4 +1,4 @@
-# Textory
+# Textery
 
 iOS app for creating fake text message conversations and exporting them as videos/screenshots for TikTok, Instagram, and YouTube content creators.
 
@@ -73,7 +73,7 @@ TabView {
 
 ## Architecture
 
-### Models (`ios/Textory/Models/`)
+### Models (`ios/Textery/Models/`)
 | File | Purpose |
 |------|---------|
 | `Conversation.swift` | Main container with characters, messages, theme, folder, isGroupChat |
@@ -85,7 +85,7 @@ TabView {
 | `ExportSettings.swift` | Video/screenshot export options |
 | `ExportHistory.swift` | SwiftData model for tracking past exports |
 
-### Views (`ios/Textory/Views/`)
+### Views (`ios/Textery/Views/`)
 
 **Home**
 - `HomeView.swift` - Main list with search, folders, swipe actions
@@ -116,7 +116,7 @@ TabView {
 - `NewConversationView.swift` - Create new conversation
 - `CharacterEditorView.swift` - Edit character with photo picker
 
-### ViewModels (`ios/Textory/ViewModels/`)
+### ViewModels (`ios/Textery/ViewModels/`)
 | File | Purpose |
 |------|---------|
 | `ConversationViewModel.swift` | CRUD conversations, folders, search, duplicate |
@@ -125,7 +125,7 @@ TabView {
 | `AIGeneratorViewModel.swift` | AI generation with custom genre/mood, group name handling |
 | `SettingsViewModel.swift` | App settings management |
 
-### Services (`ios/Textory/Services/`)
+### Services (`ios/Textery/Services/`)
 | File | Purpose |
 |------|---------|
 | `VideoExportService.swift` | On-device AVAssetWriter rendering (backup) |
@@ -297,7 +297,7 @@ All premium features bypassed - app is fully free:
 
 ## File Structure
 ```
-Textory/
+Textery/
 ├── CLAUDE.md                 <- This file (technical reference)
 ├── server/
 │   ├── main.py               <- FastAPI server
@@ -310,9 +310,9 @@ Textory/
 │       ├── send.mp3
 │       └── receive.mp3
 └── ios/
-    ├── Textory.xcodeproj
-    └── Textory/
-        ├── TextoryApp.swift
+    ├── Textery.xcodeproj
+    └── Textery/
+        ├── TexteryApp.swift
         ├── ContentView.swift
         ├── Models/
         ├── Views/
@@ -325,3 +325,27 @@ Textory/
         ├── Services/
         └── Utilities/
 ```
+
+## Current TODO
+
+### Completed
+- [x] AI Story Generation feature (OpenAI/Anthropic integration)
+- [x] Aptabase analytics integration
+- [x] Onboarding screens (4 animated pages)
+- [x] Paywall implementation (mock RevenueCat)
+- [x] App renamed from ChatStoryMaker to Textery
+- [x] Usage limits (3 free video exports, 5 free AI generations)
+- [x] Screenshot export with Long Screenshot + Paginated modes
+- [x] Free trial toggle removed (App Store compliance)
+- [x] Yearly subscription plan added to paywall
+
+### Remaining Tasks
+1. **Create App Icon** - Design and export for all sizes (1024x1024 for App Store)
+2. **Fix Export Screen** - Redesign/fix the export screen UI
+3. **Update Paywall UI** - Redesign paywall to be more visually appealing
+4. **RevenueCat Integration** - Replace mock with real SDK (lifetime $29.99, weekly $4.99, monthly $9.99, yearly $39.99)
+5. **Xcode Project Rename** - Rename folder/schemes/targets from ChatStoryMaker to Textery
+6. **App Store Submission Prep** - Screenshots, description, privacy policy, terms of service
+7. **Publish Backend on Render** - Deploy server, configure env vars, update iOS URLs
+8. **Testing** - End-to-end testing of AI, video export, paywall, onboarding
+9. **Video Export Enhancements** (Medium) - Key tap sounds, typing mistake simulation

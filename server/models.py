@@ -1,6 +1,6 @@
 #
 # models.py
-# Textory Server
+# Textery Server
 #
 # Pydantic models for API request/response
 #

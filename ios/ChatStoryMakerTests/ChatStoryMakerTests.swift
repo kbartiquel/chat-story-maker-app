@@ -1,6 +1,6 @@
 //
-//  TextoryTests.swift
-//  TextoryTests
+//  TexteryTests.swift
+//  TexteryTests
 //
 
 import Testing

@@ -50,7 +50,7 @@ final class LimitTrackingService {
     /// Check if video export limit has been reached (premium users bypass limits)
     func hasReachedVideoExportLimit() -> Bool {
         // Check premium access first
-        if SubscriptionService.shared.hasPremiumAccess() {
+        if SubscriptionService.shared.hasPremiumAccessCached() {
             return false // Premium users have no limits
         }
 
@@ -62,7 +62,7 @@ final class LimitTrackingService {
     /// Check if AI generation limit has been reached (premium users bypass limits)
     func hasReachedAIGenerationLimit() -> Bool {
         // Check premium access first
-        if SubscriptionService.shared.hasPremiumAccess() {
+        if SubscriptionService.shared.hasPremiumAccessCached() {
             return false // Premium users have no limits
         }
 
@@ -74,7 +74,7 @@ final class LimitTrackingService {
     /// Check if any limit has been reached (premium users bypass limits)
     func hasReachedAnyLimit() -> Bool {
         // Check premium access first
-        if SubscriptionService.shared.hasPremiumAccess() {
+        if SubscriptionService.shared.hasPremiumAccessCached() {
             return false // Premium users have no limits
         }
 
@@ -85,7 +85,7 @@ final class LimitTrackingService {
 
     /// Get remaining video exports before limit
     func getRemainingVideoExports() -> Int {
-        if SubscriptionService.shared.hasPremiumAccess() {
+        if SubscriptionService.shared.hasPremiumAccessCached() {
             return 999 // Unlimited for premium
         }
         let count = getVideoExportCount()
@@ -95,7 +95,7 @@ final class LimitTrackingService {
 
     /// Get remaining AI generations before limit
     func getRemainingAIGenerations() -> Int {
-        if SubscriptionService.shared.hasPremiumAccess() {
+        if SubscriptionService.shared.hasPremiumAccessCached() {
             return 999 // Unlimited for premium
         }
         let count = getAIGenerationCount()

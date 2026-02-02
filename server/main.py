@@ -1,6 +1,6 @@
 #
 # main.py
-# Textory Server
+# Textery Server
 #
 # FastAPI server for video rendering
 #
@@ -29,7 +29,7 @@ from settings_manager import load_settings, save_settings, reset_settings, get_d
 
 # Initialize FastAPI
 app = FastAPI(
-    title="Textory API",
+    title="Textery API",
     description="Video rendering API for chat story videos",
     version="1.0.0"
 )
@@ -80,7 +80,7 @@ async def root():
     """Health check endpoint."""
     return {
         "status": "ok",
-        "service": "Textory Video Renderer",
+        "service": "Textery Video Renderer",
         "version": "1.0.0"
     }
 

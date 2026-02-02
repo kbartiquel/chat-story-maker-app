@@ -44,7 +44,7 @@ class ExportViewModel {
     }
 
     var isPremium: Bool {
-        SubscriptionService.shared.hasPremiumAccess()
+        SubscriptionService.shared.hasPremiumAccessCached()
     }
 
     /// Create export history record after successful export

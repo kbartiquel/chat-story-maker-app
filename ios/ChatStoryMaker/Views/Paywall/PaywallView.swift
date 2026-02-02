@@ -1,12 +1,13 @@
 //
 //  PaywallView.swift
-//  Textory
+//  Textery
 //
 //  Custom paywall screen with plan selection
 //
 
 import SwiftUI
 import Combine
+import RevenueCat
 
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
@@ -126,65 +127,31 @@ struct PaywallView: View {
             VStack(spacing: 16) {
                 let settings = PaywallSettingsService.shared.getSettings()
 
-                // Lifetime Package
-                if let lifetimePackage = viewModel.lifetimePackage, settings.paywallLifetime {
+                // Yearly Package
+                if let yearlyPackage = viewModel.yearlyPackage, settings.paywallYearly {
                     planOption(
-                        title: "Lifetime Access",
-                        subtitle: "Pay Once, Use Forever",
-                        price: lifetimePackage.product.localizedPriceString,
-                        badge: "Best Value",
-                        isSelected: viewModel.selectedPlan == "lifetime",
+                        title: "Yearly Plan",
+                        subtitle: "Billed yearly, cancel anytime",
+                        price: yearlyPackage.localizedPriceString,
+                        badge: "Save 50%",
+                        isSelected: viewModel.selectedPlan == "yearly",
                         onTap: {
-                            viewModel.selectPlan("lifetime", hasTrial: false)
-                        }
-                    )
-                }
-
-                // Monthly Package
-                if let monthlyPackage = viewModel.monthlyPackage, settings.paywallMonthly {
-                    let hasTrial = monthlyPackage.product.hasFreeTrial
-                    planOption(
-                        title: hasTrial ? "3-Day Free Trial" : "Monthly Plan",
-                        subtitle: hasTrial ? "Then \(monthlyPackage.product.localizedPriceString)/month" : "Billed monthly, cancel anytime",
-                        price: hasTrial ? "FREE" : monthlyPackage.product.localizedPriceString,
-                        isSelected: viewModel.selectedPlan == "monthly",
-                        onTap: {
-                            viewModel.selectPlan("monthly", hasTrial: hasTrial)
+                            viewModel.selectPlan("yearly")
                         }
                     )
                 }
 
                 // Weekly Package
                 if let weeklyPackage = viewModel.weeklyPackage, settings.paywallWeekly {
-                    let hasTrial = weeklyPackage.product.hasFreeTrial
                     planOption(
-                        title: hasTrial ? "3-Day Free Trial" : "Weekly Plan",
-                        subtitle: hasTrial ? "Then \(weeklyPackage.product.localizedPriceString)/week" : "Billed weekly, cancel anytime",
-                        price: hasTrial ? "FREE" : weeklyPackage.product.localizedPriceString,
+                        title: "Weekly Plan",
+                        subtitle: "Billed weekly, cancel anytime",
+                        price: weeklyPackage.localizedPriceString,
                         isSelected: viewModel.selectedPlan == "weekly",
                         onTap: {
-                            viewModel.selectPlan("weekly", hasTrial: hasTrial)
+                            viewModel.selectPlan("weekly")
                         }
                     )
-                }
-
-                // Free Trial Toggle
-                if viewModel.shouldShowTrialToggle {
-                    Toggle(isOn: $viewModel.trialEnabled) {
-                        Text("Free Trial Enabled")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-                    }
-                    .tint(Color.green)
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(12)
-                    .onChange(of: viewModel.trialEnabled) { _, newValue in
-                        if !viewModel.isUpdatingFromPlanSelection {
-                            viewModel.handleTrialToggle(enabled: newValue)
-                        }
-                        viewModel.isUpdatingFromPlanSelection = false
-                    }
                 }
 
                 // Purchase Button
@@ -224,13 +191,13 @@ struct PaywallView: View {
 
                     Text("•").font(.system(size: 12)).foregroundColor(.gray)
 
-                    Link("Privacy", destination: URL(string: "https://kimbytes.com/textory/privacy.html")!)
+                    Link("Privacy", destination: URL(string: "https://kimbytes.com/textery/privacy.html")!)
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
 
                     Text("•").font(.system(size: 12)).foregroundColor(.gray)
 
-                    Link("Terms", destination: URL(string: "https://kimbytes.com/textory/terms.html")!)
+                    Link("Terms", destination: URL(string: "https://kimbytes.com/textery/terms.html")!)
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                 }
@@ -270,8 +237,6 @@ struct PaywallView: View {
         isSelected: Bool,
         onTap: @escaping () -> Void
     ) -> some View {
-        let isFreePrice = price == "FREE"
-
         return Button(action: onTap) {
             HStack(spacing: 12) {
                 // Left side: Title and subtitle
@@ -294,7 +259,7 @@ struct PaywallView: View {
                     if subtitle != nil {
                         Text(price)
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(isFreePrice ? .green : .black)
+                            .foregroundColor(.black)
                     }
 
                     ZStack {
@@ -342,13 +307,10 @@ struct PaywallView: View {
 
 @MainActor
 class PaywallViewModel: ObservableObject {
-    @Published var offering: MockOffering?
-    @Published var lifetimePackage: MockPackage?
-    @Published var yearlyPackage: MockPackage?
-    @Published var monthlyPackage: MockPackage?
-    @Published var weeklyPackage: MockPackage?
-    @Published var selectedPlan: String = "lifetime"
-    @Published var trialEnabled = false
+    @Published var offering: Offering?
+    @Published var yearlyPackage: Package?
+    @Published var weeklyPackage: Package?
+    @Published var selectedPlan: String = "yearly"
     @Published var isLoading = true
     @Published var isPurchasing = false
     @Published var isRestoring = false
@@ -362,33 +324,6 @@ class PaywallViewModel: ObservableObject {
     private var secondsRemaining = 0
     private var totalSeconds = 0
     private var rotationTimer: Timer?
-    var isUpdatingFromPlanSelection = false
-
-    /// Returns true if at least one visible package has a trial
-    var hasVisibleTrial: Bool {
-        let settings = PaywallSettingsService.shared.getSettings()
-        let monthlyHasTrial = (monthlyPackage?.product.hasFreeTrial ?? false) && settings.paywallMonthly
-        let weeklyHasTrial = (weeklyPackage?.product.hasFreeTrial ?? false) && settings.paywallWeekly
-        return monthlyHasTrial || weeklyHasTrial
-    }
-
-    /// Determines if the trial toggle should be shown
-    var shouldShowTrialToggle: Bool {
-        let settings = PaywallSettingsService.shared.getSettings()
-        let monthlyShown = monthlyPackage != nil && settings.paywallMonthly
-        let weeklyShown = weeklyPackage != nil && settings.paywallWeekly
-
-        // If only one subscription package shown, check if it has a trial
-        if monthlyShown && !weeklyShown {
-            return monthlyPackage?.product.hasFreeTrial ?? false
-        }
-        if !monthlyShown && weeklyShown {
-            return weeklyPackage?.product.hasFreeTrial ?? false
-        }
-
-        // Both packages shown - show toggle if at least one has a trial
-        return hasVisibleTrial
-    }
 
     init() {
         startRingingAnimation()
@@ -400,20 +335,18 @@ class PaywallViewModel: ObservableObject {
         canClose = closeDelay == 0
 
         Task {
-            if let offering = await SubscriptionService.shared.getOfferings() {
+            if let offerings = await SubscriptionService.shared.getOfferings(),
+               let offering = offerings.current {
                 self.offering = offering
-                self.lifetimePackage = offering.lifetimePackage
-                self.yearlyPackage = offering.yearlyPackage
-                self.monthlyPackage = offering.monthlyPackage
-                self.weeklyPackage = offering.weeklyPackage
+                self.yearlyPackage = offering.annual
+                self.weeklyPackage = offering.weekly
 
                 // Set initial selected plan
                 let settings = PaywallSettingsService.shared.getSettings()
-                if settings.paywallLifetime && self.lifetimePackage != nil {
-                    self.selectedPlan = "lifetime"
+                if settings.paywallYearly && self.yearlyPackage != nil {
+                    self.selectedPlan = "yearly"
                 } else if settings.paywallWeekly && self.weeklyPackage != nil {
                     self.selectedPlan = "weekly"
-                    self.trialEnabled = self.weeklyPackage?.product.hasFreeTrial ?? false
                 }
 
                 self.isLoading = false
@@ -460,52 +393,22 @@ class PaywallViewModel: ObservableObject {
         }
     }
 
-    func selectPlan(_ plan: String, hasTrial: Bool) {
-        isUpdatingFromPlanSelection = true
+    func selectPlan(_ plan: String) {
         selectedPlan = plan
-        trialEnabled = hasTrial
-    }
-
-    func handleTrialToggle(enabled: Bool) {
-        let settings = PaywallSettingsService.shared.getSettings()
-        let weeklyHasTrial = (weeklyPackage?.product.hasFreeTrial ?? false) && settings.paywallWeekly
-        let monthlyHasTrial = (monthlyPackage?.product.hasFreeTrial ?? false) && settings.paywallMonthly
-
-        if enabled {
-            if weeklyHasTrial {
-                selectedPlan = "weekly"
-            } else if monthlyHasTrial {
-                selectedPlan = "monthly"
-            }
-        } else {
-            if settings.paywallLifetime {
-                selectedPlan = "lifetime"
-            } else if settings.paywallYearly {
-                selectedPlan = "yearly"
-            }
-        }
     }
 
     func getButtonText() -> String {
-        if selectedPlan == "lifetime" {
-            return "Get Lifetime Access"
-        } else if selectedPlan == "yearly" {
+        if selectedPlan == "yearly" {
             return "Get Yearly Access"
-        } else if trialEnabled && hasVisibleTrial {
-            return "Try 3 Days Free"
         } else {
             return "Subscribe Now"
         }
     }
 
     func handlePurchase(onSuccess: @escaping () -> Void) {
-        let package: MockPackage?
-        if selectedPlan == "lifetime" {
-            package = lifetimePackage
-        } else if selectedPlan == "yearly" {
+        let package: Package?
+        if selectedPlan == "yearly" {
             package = yearlyPackage
-        } else if selectedPlan == "monthly" {
-            package = monthlyPackage
         } else {
             package = weeklyPackage
         }
