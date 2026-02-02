@@ -12,10 +12,9 @@ class ServerExportService {
 
     // MARK: - Configuration
 
-    // Change this to your Render URL after deployment
+    // Production server on Render
     // For local testing: "http://YOUR_MAC_IP:8000"
-    // For production: "https://your-app.onrender.com"
-    static var baseURL: String = "http://192.168.1.4:8000"
+    static var baseURL: String = "https://chat-story-maker.onrender.com"
 
     // MARK: - Models
 

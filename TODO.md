@@ -50,16 +50,11 @@
 - Privacy policy URL (https://kimbytes.com/textery/privacy.html)
 - Terms of service URL (https://kimbytes.com/textery/terms.html)
 
-### 7. Publish Backend on Render & Update App (Priority: High)
-- Deploy Python server to Render.com
-- Configure environment variables:
-  - `AI_SERVICE=anthropic` or `openai`
-  - `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
-  - Optional: Cloudinary for video storage
-- Update iOS app with production URLs:
-  - `AIService.baseURL` - for AI story generation
-  - `ServerExportService.baseURL` - for video rendering
-- Test all endpoints after deployment
+### 7. Publish Backend on Render & Update App (Priority: High) - DONE
+- [x] Deploy Python server to Render.com
+- [x] Configure environment variables
+- [x] Update iOS app with production URL: https://chat-story-maker.onrender.com
+- [ ] Test all endpoints after deployment
 
 ### 8. Testing
 - [ ] Test full AI generation flow end-to-end
@@ -82,5 +77,5 @@
 - `com.kimbytes.chatstorymaker`
 
 ### Server
-- Local: `http://192.168.1.5:8000`
-- Start: `cd server && uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
+- Production: `https://chat-story-maker.onrender.com`
+- Local: `cd server && uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
