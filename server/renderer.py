@@ -12,8 +12,7 @@ import io
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from pilmoji import Pilmoji
-from moviepy.editor import ImageSequenceClip, AudioFileClip, CompositeAudioClip
-from moviepy.audio.AudioClip import AudioArrayClip
+import subprocess
 import tempfile
 from typing import Optional, Callable
 from models import (
@@ -375,18 +374,54 @@ class VideoRenderer:
             draw.polygon(points, fill=color)
 
     def render(self, progress_callback: Optional[Callable[[float], None]] = None) -> str:
-        """Render the video and return the file path."""
+        """Render the video by streaming frames directly to ffmpeg (memory efficient)."""
         if progress_callback:
             progress_callback(0.02)
 
-        frames = []
         visible_messages = []
         frame_count = 0
         total_messages = len(self.messages)
 
+        # Output paths
+        video_path = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.mp4")
+        temp_video_path = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}_temp.mp4")
+
         if progress_callback:
             progress_callback(0.05)
 
+        # Start ffmpeg process to receive frames via pipe
+        ffmpeg_cmd = [
+            'ffmpeg', '-y',
+            '-f', 'rawvideo',
+            '-vcodec', 'rawvideo',
+            '-s', f'{self.render_width}x{self.render_height}',
+            '-pix_fmt', 'rgb24',
+            '-r', str(FPS),
+            '-i', '-',  # Read from pipe
+            '-c:v', 'libx264',
+            '-preset', 'fast',  # Faster encoding, less memory
+            '-crf', '23',  # Slightly lower quality but faster
+            '-pix_fmt', 'yuv420p',
+            temp_video_path
+        ]
+
+        ffmpeg_process = subprocess.Popen(
+            ffmpeg_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+        def write_frame(frame: Image.Image, repeat: int = 1):
+            """Write a frame to ffmpeg pipe, optionally repeating it."""
+            nonlocal frame_count
+            frame_rgb = frame.convert('RGB')
+            frame_bytes = frame_rgb.tobytes()
+            for _ in range(repeat):
+                ffmpeg_process.stdin.write(frame_bytes)
+                frame_count += 1
+
+        # Process each message
         for index, message in enumerate(self.messages):
             character = self.get_character(message.character_id)
             is_me = character.is_me if character else True
@@ -408,24 +443,20 @@ class VideoRenderer:
                         keyboard_typing_text=partial_text,
                         highlighted_key=current_char
                     )
-
-                    for _ in range(self.frames_per_char):
-                        frames.append(frame)
-                        frame_count += 1
+                    write_frame(frame, self.frames_per_char)
 
                     if progress_callback and char_index % 3 == 0:
                         typing_progress = char_index / total_chars * 0.6
                         progress_callback(message_base_progress + typing_progress * message_progress_range)
 
+                # Brief pause showing full text in input
                 frame = self.render_frame(
                     visible_messages=visible_messages,
                     show_typing_indicator=False,
                     typing_character=None,
                     keyboard_typing_text=message.text
                 )
-                for _ in range(10):
-                    frames.append(frame)
-                    frame_count += 1
+                write_frame(frame, 10)
 
                 message_time = frame_count / FPS
                 self.message_timings.append({
@@ -449,9 +480,7 @@ class VideoRenderer:
                     typing_character=character,
                     keyboard_typing_text=None
                 )
-                for _ in range(typing_frames):
-                    frames.append(frame)
-                    frame_count += 1
+                write_frame(frame, typing_frames)
 
                 message_time = frame_count / FPS
                 self.message_timings.append({
@@ -465,6 +494,7 @@ class VideoRenderer:
                 if progress_callback:
                     progress_callback(message_base_progress + 0.8 * message_progress_range)
 
+            # Reading pause
             reading_time = min(max(len(message.text) / 25.0, 1.5), 3.0)
             pause_frames = int(reading_time * FPS)
 
@@ -474,9 +504,7 @@ class VideoRenderer:
                 typing_character=None,
                 keyboard_typing_text=None
             )
-            for _ in range(pause_frames):
-                frames.append(frame)
-                frame_count += 1
+            write_frame(frame, pause_frames)
 
             if progress_callback:
                 progress_callback(message_base_progress + message_progress_range)
@@ -484,49 +512,51 @@ class VideoRenderer:
         if progress_callback:
             progress_callback(0.82)
 
+        # Final pause
         frame = self.render_frame(
             visible_messages=visible_messages,
             show_typing_indicator=False,
             typing_character=None,
             keyboard_typing_text=None
         )
-        for _ in range(60):
-            frames.append(frame)
-            frame_count += 1
+        write_frame(frame, 60)
 
         if progress_callback:
             progress_callback(0.85)
 
-        frame_arrays = [np.array(f) for f in frames]
-        clip = ImageSequenceClip(frame_arrays, fps=FPS)
+        # Close ffmpeg pipe and wait for completion
+        ffmpeg_process.stdin.close()
+        ffmpeg_process.wait()
 
         if progress_callback:
-            progress_callback(0.88)
+            progress_callback(0.90)
 
+        # Add audio if enabled
         if self.settings.enable_sounds:
-            audio = self.create_audio(frame_count / FPS)
-            if audio:
-                clip = clip.set_audio(audio)
-            if progress_callback:
-                progress_callback(0.95)
-
-        output_path = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.mp4")
-        clip.write_videofile(
-            output_path,
-            fps=FPS,
-            codec='libx264',
-            audio_codec='aac',
-            bitrate="12M",
-            preset="slow",
-            ffmpeg_params=["-crf", "18"],
-            verbose=False,
-            logger=None
-        )
+            audio_path = self.create_audio_file(frame_count / FPS)
+            if audio_path:
+                # Merge video and audio
+                merge_cmd = [
+                    'ffmpeg', '-y',
+                    '-i', temp_video_path,
+                    '-i', audio_path,
+                    '-c:v', 'copy',
+                    '-c:a', 'aac',
+                    '-shortest',
+                    video_path
+                ]
+                subprocess.run(merge_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                os.remove(temp_video_path)
+                os.remove(audio_path)
+            else:
+                os.rename(temp_video_path, video_path)
+        else:
+            os.rename(temp_video_path, video_path)
 
         if progress_callback:
             progress_callback(1.0)
 
-        return output_path
+        return video_path
 
     def render_frame(
         self,
@@ -1201,36 +1231,68 @@ class VideoRenderer:
         )
         draw.text((x + int(8 * self.scale), current_y + int(12 * self.scale)), "return", fill=text_color, font=small_font)
 
-    def create_audio(self, total_duration: float):
-        """Create audio with send/receive sounds using moviepy."""
+    def create_audio_file(self, total_duration: float) -> Optional[str]:
+        """Create audio file with send/receive sounds using ffmpeg (memory efficient)."""
         if not self.message_timings:
             return None
-
-        from moviepy.editor import AudioFileClip, CompositeAudioClip, concatenate_audioclips
 
         assets_dir = os.path.join(os.path.dirname(__file__), "assets")
         send_path = os.path.join(assets_dir, "send.mp3")
         receive_path = os.path.join(assets_dir, "receive.mp3")
 
-        clips = []
-        for timing in self.message_timings:
-            is_me = timing["is_me"]
-            # send.mp3 for sent messages, receive.mp3 for received messages
-            sound_path = send_path if is_me else receive_path
-
-            if os.path.exists(sound_path):
-                try:
-                    clip = AudioFileClip(sound_path)
-                    clip = clip.set_start(timing["time"])
-                    clips.append(clip)
-                    print(f"Sound at {timing['time']:.2f}s: {sound_path}")
-                except Exception as e:
-                    print(f"Failed: {e}")
-
-        if not clips:
+        # Check if sound files exist
+        if not os.path.exists(send_path) or not os.path.exists(receive_path):
+            print(f"Sound files not found: {send_path}, {receive_path}")
             return None
 
-        return CompositeAudioClip(clips).set_duration(total_duration)
+        # Build ffmpeg filter for mixing audio at specific times
+        inputs = []
+        filter_parts = []
+
+        for i, timing in enumerate(self.message_timings):
+            is_me = timing["is_me"]
+            sound_path = send_path if is_me else receive_path
+            delay_ms = int(timing["time"] * 1000)
+
+            inputs.extend(['-i', sound_path])
+            filter_parts.append(f'[{i}]adelay={delay_ms}|{delay_ms}[a{i}]')
+
+        if not inputs:
+            return None
+
+        # Create mix filter
+        mix_inputs = ''.join([f'[a{i}]' for i in range(len(self.message_timings))])
+        filter_parts.append(f'{mix_inputs}amix=inputs={len(self.message_timings)}:duration=longest[out]')
+
+        filter_complex = ';'.join(filter_parts)
+
+        output_path = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}_audio.aac")
+
+        cmd = [
+            'ffmpeg', '-y'
+        ] + inputs + [
+            '-filter_complex', filter_complex,
+            '-map', '[out]',
+            '-t', str(total_duration),
+            '-c:a', 'aac',
+            output_path
+        ]
+
+        try:
+            result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            if result.returncode == 0:
+                print(f"Audio created: {output_path}")
+                return output_path
+            else:
+                print(f"Audio creation failed: {result.stderr.decode()}")
+                return None
+        except Exception as e:
+            print(f"Audio creation error: {e}")
+            return None
+
+    def create_audio(self, total_duration: float):
+        """Legacy method - kept for compatibility."""
+        return None  # Disabled - use create_audio_file instead
 
     def load_sound_file(self, filename: str) -> Optional[np.ndarray]:
         """Try to load a sound file from assets folder using moviepy."""
