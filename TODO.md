@@ -17,16 +17,11 @@
 - [x] Render queue limiter (max 2 concurrent renders)
 - [x] Input field text wrapping for long messages
 
-## In Progress
-
-### 1. App Store Connect Products (Priority: High)
-- [ ] Complete product metadata in App Store Connect:
-  - `chatstorymaker_annual` - needs localization, price
-  - `chatstorymaker_weekly` - needs localization, price
-- [ ] Wait for products to be "Ready to Submit" status
-- [ ] Test purchases with Sandbox tester account
-
 ## Remaining Tasks
+
+### 1. App Store Connect Products (Priority: High) - DONE
+- [x] Complete product metadata in App Store Connect
+- [x] Products ready to submit
 
 ### 2. Create App Icon (Priority: High)
 - Design Textery app icon
