@@ -93,17 +93,12 @@ struct PaywallView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 16) {
-                    // App Icon with animation
-                    Image(systemName: "bubble.left.and.bubble.right.fill")
-                        .font(.system(size: 60))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color(hex: "#E07B5E"), Color(hex: "#F09E88")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .rotationEffect(.degrees(viewModel.iconRotation))
+                    // App Icon
+                    Image("AppIconImage")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                        .clipShape(RoundedRectangle(cornerRadius: 22))
                         .padding(.top, 50)
 
                     // Title
