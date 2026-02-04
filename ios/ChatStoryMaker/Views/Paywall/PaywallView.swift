@@ -362,14 +362,14 @@ class PaywallViewModel: ObservableObject {
     }
 
     private func startRingingAnimation() {
-        rotationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        rotationTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             Task { @MainActor in
-                withAnimation(.easeInOut(duration: 0.1)) {
+                withAnimation(.easeInOut(duration: 0.25)) {
                     if self.iconRotation == 0 {
-                        self.iconRotation = 8
+                        self.iconRotation = 5
                     } else if self.iconRotation > 0 {
-                        self.iconRotation = -8
+                        self.iconRotation = -5
                     } else {
                         self.iconRotation = 0
                     }
