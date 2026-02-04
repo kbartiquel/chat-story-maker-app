@@ -96,6 +96,28 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_policy():
+    """Serve the privacy policy page."""
+    privacy_html_path = os.path.join(os.path.dirname(__file__), "privacy.html")
+    try:
+        with open(privacy_html_path, "r") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Privacy policy not found")
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_of_service():
+    """Serve the terms of service page."""
+    terms_html_path = os.path.join(os.path.dirname(__file__), "terms.html")
+    try:
+        with open(terms_html_path, "r") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Terms of service not found")
+
+
 @app.get("/queue-status")
 async def queue_status():
     """Get current render queue status."""
