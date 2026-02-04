@@ -165,7 +165,7 @@ struct ExportView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(viewModel.canExport ? Color.accentColor : Color.gray)
+            .background(viewModel.canExport ? Color(hex: "#1A9E6D") : Color.gray)
             .cornerRadius(12)
         }
         .disabled(!viewModel.canExport)

@@ -35,7 +35,7 @@ struct EmptyStateView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.accentColor)
+                    .background(Color(hex: "#1A9E6D"))
                     .cornerRadius(12)
             }
             .padding(.horizontal, 40)

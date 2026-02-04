@@ -17,28 +17,28 @@ struct OnboardingView: View {
             title: "Create Chat Stories",
             subtitle: "Design fake text conversations that look completely real. Perfect for storytelling and content creation.",
             iconName: "bubble.left.and.bubble.right.fill",
-            gradientColors: [Color(hex: "#1A9E6D"), Color(hex: "#2EC4A0")],
+            gradientColors: [Color(hex: "#E07B5E"), Color(hex: "#F09E88")],
             accentColor: .white
         ),
         OnboardingPage(
             title: "AI Writes For You",
             subtitle: "Let AI generate viral chat stories instantly. Choose genre, mood, and watch the magic happen.",
             iconName: "sparkles",
-            gradientColors: [Color(hex: "#159957"), Color(hex: "#1DB678")],
+            gradientColors: [Color(hex: "#D4694E"), Color(hex: "#E8886E")],
             accentColor: .white
         ),
         OnboardingPage(
             title: "Export & Go Viral",
             subtitle: "Turn your chats into videos with typing animations. Ready for TikTok, Instagram, and YouTube.",
             iconName: "play.rectangle.fill",
-            gradientColors: [Color(hex: "#11998E"), Color(hex: "#38EF7D")],
+            gradientColors: [Color(hex: "#C85A42"), Color(hex: "#E07B5E")],
             accentColor: .white
         ),
         OnboardingPage(
             title: "Your Story Awaits",
             subtitle: "Join thousands of creators making engaging content. Start your first chat story now!",
             iconName: "heart.fill",
-            gradientColors: [Color(hex: "#1A9E6D"), Color(hex: "#45B649")],
+            gradientColors: [Color(hex: "#E07B5E"), Color(hex: "#F5A58E")],
             accentColor: .white
         )
     ]

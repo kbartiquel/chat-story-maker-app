@@ -16,6 +16,7 @@
 - [x] Memory-efficient video renderer (streams to ffmpeg)
 - [x] Render queue limiter (max 2 concurrent renders)
 - [x] Input field text wrapping for long messages
+- [x] Color scheme updated (Option 3: Coral branding, iOS Blue UI, Green action buttons)
 
 ## Remaining Tasks
 

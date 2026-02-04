@@ -36,6 +36,7 @@ struct ContentView: View {
                         Label("Settings", systemImage: "gearshape.fill")
                     }
             }
+            .tint(Color(hex: "#007AFF")) // iOS Blue for tab bar
 
             // Onboarding overlay
             if showOnboarding {

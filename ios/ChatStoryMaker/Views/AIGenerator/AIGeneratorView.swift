@@ -114,7 +114,7 @@ struct AIGeneratorView: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(viewModel.canGenerate ? Color.purple : Color.gray)
+                    .fill(viewModel.canGenerate ? Color(hex: "#1A9E6D") : Color.gray)
             )
         }
         .disabled(!viewModel.canGenerate)

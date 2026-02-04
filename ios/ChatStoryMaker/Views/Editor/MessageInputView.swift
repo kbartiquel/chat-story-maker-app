@@ -50,7 +50,7 @@ struct MessageInputView: View {
                     Button(action: onSend) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 28))
-                            .foregroundColor(canSend ? .accentColor : .gray)
+                            .foregroundColor(canSend ? Color(hex: "#1A9E6D") : .gray)
                     }
                     .disabled(!canSend)
                 } else {
