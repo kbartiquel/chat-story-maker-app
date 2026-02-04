@@ -156,24 +156,13 @@ struct PaywallView: View {
 
                 // Purchase Button
                 Button(action: { viewModel.handlePurchase(onSuccess: { dismiss() }) }) {
-                    HStack {
-                        Text(viewModel.getButtonText())
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-
-                        Image(systemName: "arrow.right")
-                            .foregroundColor(.white)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(hex: "#1A9E6D"), Color(hex: "#2EC4A0")],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(28)
+                    Text(viewModel.getButtonText())
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color(hex: "#1A9E6D"))
+                        .cornerRadius(12)
                 }
                 .disabled(viewModel.isPurchasing)
 
