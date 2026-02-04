@@ -125,11 +125,22 @@ struct PaywallView: View {
 
                 // Yearly Package
                 if let yearlyPackage = viewModel.yearlyPackage, settings.paywallYearly {
+                    // Calculate savings vs weekly (52 weeks)
+                    let savingsBadge: String? = {
+                        guard let weeklyPackage = viewModel.weeklyPackage else { return nil }
+                        let weeklyAnnualCost = weeklyPackage.storeProduct.price as Decimal * 52
+                        let yearlyPrice = yearlyPackage.storeProduct.price as Decimal
+                        guard weeklyAnnualCost > 0 else { return nil }
+                        let savings = ((weeklyAnnualCost - yearlyPrice) / weeklyAnnualCost) * 100
+                        let savingsInt = Int(NSDecimalNumber(decimal: savings).doubleValue)
+                        return savingsInt > 0 ? "Save \(savingsInt)%" : nil
+                    }()
+
                     planOption(
                         title: "Yearly Plan",
                         subtitle: "Billed yearly, cancel anytime",
                         price: yearlyPackage.localizedPriceString,
-                        badge: "Save 50%",
+                        badge: savingsBadge,
                         isSelected: viewModel.selectedPlan == "yearly",
                         onTap: {
                             viewModel.selectPlan("yearly")
