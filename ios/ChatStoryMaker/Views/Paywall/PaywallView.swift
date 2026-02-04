@@ -27,7 +27,7 @@ struct PaywallView: View {
 
             if viewModel.isLoading {
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#1DB678")))
+                    .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#E07B5E")))
             } else if viewModel.offering != nil {
                 paywallContent
             }
@@ -98,7 +98,7 @@ struct PaywallView: View {
                         .font(.system(size: 60))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color(hex: "#1A9E6D"), Color(hex: "#2EC4A0")],
+                                colors: [Color(hex: "#E07B5E"), Color(hex: "#F09E88")],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -213,12 +213,12 @@ struct PaywallView: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color(hex: "#1DB678").opacity(0.1))
+                    .fill(Color(hex: "#E07B5E").opacity(0.1))
                     .frame(width: 36, height: 36)
 
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "#1DB678"))
+                    .foregroundColor(Color(hex: "#E07B5E"))
             }
 
             Text(text)
@@ -264,12 +264,12 @@ struct PaywallView: View {
 
                     ZStack {
                         Circle()
-                            .stroke(isSelected ? Color(hex: "#1DB678") : Color.gray.opacity(0.3), lineWidth: 2)
+                            .stroke(isSelected ? Color(hex: "#E07B5E") : Color.gray.opacity(0.3), lineWidth: 2)
                             .frame(width: 24, height: 24)
 
                         if isSelected {
                             Circle()
-                                .fill(Color(hex: "#1DB678"))
+                                .fill(Color(hex: "#E07B5E"))
                                 .frame(width: 24, height: 24)
 
                             Image(systemName: "checkmark")
@@ -280,10 +280,10 @@ struct PaywallView: View {
                 }
             }
             .padding()
-            .background(isSelected ? Color(hex: "#1DB678").opacity(0.1) : Color.white)
+            .background(isSelected ? Color(hex: "#E07B5E").opacity(0.1) : Color.white)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color(hex: "#1DB678") : Color.gray.opacity(0.3), lineWidth: 2)
+                    .stroke(isSelected ? Color(hex: "#E07B5E") : Color.gray.opacity(0.3), lineWidth: 2)
             )
             .cornerRadius(12)
             .overlay(alignment: .topTrailing) {
