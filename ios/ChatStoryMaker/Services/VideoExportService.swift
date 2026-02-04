@@ -1,6 +1,6 @@
 //
 //  VideoExportService.swift
-//  Textory
+//  Textery
 //
 //  AVFoundation video export with sound effects
 //

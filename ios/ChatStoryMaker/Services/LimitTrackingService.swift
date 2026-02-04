@@ -1,6 +1,6 @@
 //
 //  LimitTrackingService.swift
-//  Textory
+//  Textery
 //
 //  Service for tracking user action limits (video exports and AI generations)
 //

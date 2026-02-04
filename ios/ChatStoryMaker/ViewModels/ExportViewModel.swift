@@ -1,6 +1,6 @@
 //
 //  ExportViewModel.swift
-//  Textory
+//  Textery
 //
 //  ViewModel for export settings and video/image generation
 //

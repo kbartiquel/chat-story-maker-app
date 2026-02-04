@@ -1,6 +1,6 @@
 //
 //  CardView.swift
-//  Textory
+//  Textery
 //
 //  White background card with rounded corners and shadow
 //

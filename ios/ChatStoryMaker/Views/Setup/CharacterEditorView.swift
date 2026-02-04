@@ -1,6 +1,6 @@
 //
 //  CharacterEditorView.swift
-//  Textory
+//  Textery
 //
 //  Edit character name, color, and side
 //
@@ -27,7 +27,7 @@ struct CharacterEditorView: View {
     ]
 
     private let presetColors: [String] = [
-        "#1DB678", // Textory Green
+        "#1DB678", // Textery Green
         "#007AFF", // Blue
         "#FF3B30", // Red
         "#FF9500", // Orange

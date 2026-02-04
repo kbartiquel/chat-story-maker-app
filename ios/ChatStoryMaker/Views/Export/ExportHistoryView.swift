@@ -1,6 +1,6 @@
 //
 //  ExportHistoryView.swift
-//  Textory
+//  Textery
 //
 //  View to display export history
 //

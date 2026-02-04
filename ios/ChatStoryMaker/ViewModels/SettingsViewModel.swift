@@ -1,6 +1,6 @@
 //
 //  SettingsViewModel.swift
-//  Textory
+//  Textery
 //
 //  ViewModel for settings and premium state
 //

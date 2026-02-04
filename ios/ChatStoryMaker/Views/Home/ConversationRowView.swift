@@ -1,6 +1,6 @@
 //
 //  ConversationRowView.swift
-//  Textory
+//  Textery
 //
 //  List row component for displaying a conversation
 //

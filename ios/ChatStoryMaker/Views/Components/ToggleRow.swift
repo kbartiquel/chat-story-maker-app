@@ -1,6 +1,6 @@
 //
 //  ToggleRow.swift
-//  Textory
+//  Textery
 //
 //  Label on left, toggle on right
 //

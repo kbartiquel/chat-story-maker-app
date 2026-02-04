@@ -1,6 +1,6 @@
 //
 //  Helpers.swift
-//  Textory
+//  Textery
 //
 //  Utility functions
 //

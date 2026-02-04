@@ -1,6 +1,6 @@
 //
 //  StatusPickerView.swift
-//  Textory
+//  Textery
 //
 //  Pick delivery status for a message
 //

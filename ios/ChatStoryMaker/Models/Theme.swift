@@ -1,6 +1,6 @@
 //
 //  Theme.swift
-//  Textory
+//  Textery
 //
 //  iMessage theme definition
 //

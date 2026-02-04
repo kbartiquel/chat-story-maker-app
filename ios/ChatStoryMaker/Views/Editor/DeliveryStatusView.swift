@@ -1,6 +1,6 @@
 //
 //  DeliveryStatusView.swift
-//  Textory
+//  Textery
 //
 //  Delivery status indicators - WhatsApp checkmarks or iMessage text
 //

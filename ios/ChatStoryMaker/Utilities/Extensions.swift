@@ -1,6 +1,6 @@
 //
 //  Extensions.swift
-//  Textory
+//  Textery
 //
 //  Utility extensions
 //

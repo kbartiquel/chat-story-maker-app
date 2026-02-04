@@ -1,6 +1,6 @@
 //
 //  ExportHistory.swift
-//  Textory
+//  Textery
 //
 //  Model to store export history records
 //

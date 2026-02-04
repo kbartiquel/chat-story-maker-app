@@ -1,6 +1,6 @@
 //
 //  HomeView.swift
-//  Textory
+//  Textery
 //
 //  Main view displaying list of saved conversations
 //

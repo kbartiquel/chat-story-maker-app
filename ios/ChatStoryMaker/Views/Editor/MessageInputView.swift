@@ -1,6 +1,6 @@
 //
 //  MessageInputView.swift
-//  Textory
+//  Textery
 //
 //  iMessage-style input field with + button, text field, and send/mic button
 //

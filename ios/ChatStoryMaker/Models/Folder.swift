@@ -1,6 +1,6 @@
 //
 //  Folder.swift
-//  Textory
+//  Textery
 //
 //  Folder model for organizing conversations
 //

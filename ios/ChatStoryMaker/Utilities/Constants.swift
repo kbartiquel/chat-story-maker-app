@@ -1,6 +1,6 @@
 //
 //  Constants.swift
-//  Textory
+//  Textery
 //
 //  App-wide constants and configuration
 //

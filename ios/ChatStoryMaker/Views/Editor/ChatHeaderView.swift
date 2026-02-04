@@ -1,6 +1,6 @@
 //
 //  ChatHeaderView.swift
-//  Textory
+//  Textery
 //
 //  iMessage-style chat header with contact/group info
 //

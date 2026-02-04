@@ -1,6 +1,6 @@
 //
 //  Message.swift
-//  Textory
+//  Textery
 //
 //  Message model for chat messages
 //

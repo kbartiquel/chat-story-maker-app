@@ -1,6 +1,6 @@
 //
 //  AIGeneratorView.swift
-//  Textory
+//  Textery
 //
 //  AI-powered story generation screen
 //

@@ -1,6 +1,6 @@
 //
 //  SectionHeader.swift
-//  Textory
+//  Textery
 //
 //  Gray uppercase text for section titles
 //

@@ -1,6 +1,6 @@
 //
 //  SoundGenerator.swift
-//  Textory
+//  Textery
 //
 //  Generates audio samples for message sounds (no files needed)
 //

@@ -1,6 +1,6 @@
 //
 //  FolderManagementView.swift
-//  Textory
+//  Textery
 //
 //  Create, edit, and delete folders
 //

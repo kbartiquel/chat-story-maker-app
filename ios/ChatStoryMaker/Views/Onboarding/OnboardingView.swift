@@ -1,6 +1,6 @@
 //
 //  OnboardingView.swift
-//  Textory
+//  Textery
 //
 //  Created with Claude Code
 //

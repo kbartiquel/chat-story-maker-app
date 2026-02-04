@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  Textory
+//  Textery
 //
 //  Main tab bar container
 //

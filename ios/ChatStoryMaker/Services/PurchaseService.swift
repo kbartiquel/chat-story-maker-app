@@ -1,6 +1,6 @@
 //
 //  PurchaseService.swift
-//  Textory
+//  Textery
 //
 //  Premium features - Currently bypassed (all features free)
 //

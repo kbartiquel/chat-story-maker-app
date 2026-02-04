@@ -1,6 +1,6 @@
 //
 //  SettingsView.swift
-//  Textory
+//  Textery
 //
 //  App settings screen
 //

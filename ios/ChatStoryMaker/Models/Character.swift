@@ -1,6 +1,6 @@
 //
 //  Character.swift
-//  Textory
+//  Textery
 //
 //  Character model for conversation participants
 //

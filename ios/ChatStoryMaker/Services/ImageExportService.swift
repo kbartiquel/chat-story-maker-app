@@ -1,6 +1,6 @@
 //
 //  ImageExportService.swift
-//  Textory
+//  Textery
 //
 //  Export conversation as screenshot image
 //

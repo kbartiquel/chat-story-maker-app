@@ -1,6 +1,6 @@
 //
 //  PrimaryButton.swift
-//  Textory
+//  Textery
 //
 //  Full-width rounded button with loading state
 //

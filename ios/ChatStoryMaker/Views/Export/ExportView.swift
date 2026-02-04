@@ -1,6 +1,6 @@
 //
 //  ExportView.swift
-//  Textory
+//  Textery
 //
 //  Export settings screen with video/screenshot preview
 //

@@ -1,6 +1,6 @@
 //
-//  TextoryApp.swift
-//  Textory
+//  TexteryApp.swift
+//  Textery
 //
 //  Created with Claude Code
 //  Copyright © 2024 KimBytes. All rights reserved.
@@ -12,7 +12,7 @@ import Aptabase
 import RevenueCat
 
 @main
-struct TextoryApp: App {
+struct TexteryApp: App {
     let container: ModelContainer
 
     init() {

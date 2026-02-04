@@ -1,6 +1,6 @@
 //
 //  AIGeneratorViewModel.swift
-//  Textory
+//  Textery
 //
 //  ViewModel for AI story generation
 //

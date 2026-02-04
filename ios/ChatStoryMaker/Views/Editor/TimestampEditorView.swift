@@ -1,6 +1,6 @@
 //
 //  TimestampEditorView.swift
-//  Textory
+//  Textery
 //
 //  Edit message timestamp for storytelling
 //

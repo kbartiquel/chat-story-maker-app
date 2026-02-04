@@ -1,6 +1,6 @@
 //
 //  ExportSettings.swift
-//  Textory
+//  Textery
 //
 //  Video and screenshot export settings and formats
 //

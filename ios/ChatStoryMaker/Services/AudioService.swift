@@ -1,6 +1,6 @@
 //
 //  AudioService.swift
-//  Textory
+//  Textery
 //
 //  System sounds for messaging (no files needed)
 //

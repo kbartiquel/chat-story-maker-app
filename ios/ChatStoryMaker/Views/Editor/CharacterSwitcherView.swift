@@ -1,6 +1,6 @@
 //
 //  CharacterSwitcherView.swift
-//  Textory
+//  Textery
 //
 //  Character switcher buttons with add participant support for group chats
 //

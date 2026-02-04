@@ -1,6 +1,6 @@
 //
 //  AnalyticsService.swift
-//  Textory
+//  Textery
 //
 //  Created with Claude Code
 //

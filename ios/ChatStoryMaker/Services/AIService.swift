@@ -1,6 +1,6 @@
 //
 //  AIService.swift
-//  Textory
+//  Textery
 //
 //  Server API integration for AI story generation
 //

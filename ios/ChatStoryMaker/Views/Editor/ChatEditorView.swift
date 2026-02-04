@@ -1,6 +1,6 @@
 //
 //  ChatEditorView.swift
-//  Textory
+//  Textery
 //
 //  Main chat editor for editing a conversation
 //

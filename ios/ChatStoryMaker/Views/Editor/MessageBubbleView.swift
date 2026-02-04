@@ -1,6 +1,6 @@
 //
 //  MessageBubbleView.swift
-//  Textory
+//  Textery
 //
 //  Chat bubble component styled like iMessage
 //

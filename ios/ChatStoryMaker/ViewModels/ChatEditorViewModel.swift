@@ -1,6 +1,6 @@
 //
 //  ChatEditorViewModel.swift
-//  Textory
+//  Textery
 //
 //  ViewModel for chat editor logic
 //

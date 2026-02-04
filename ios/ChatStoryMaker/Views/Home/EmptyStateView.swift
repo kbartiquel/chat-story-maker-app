@@ -1,6 +1,6 @@
 //
 //  EmptyStateView.swift
-//  Textory
+//  Textery
 //
 //  Empty state UI when no conversations exist
 //

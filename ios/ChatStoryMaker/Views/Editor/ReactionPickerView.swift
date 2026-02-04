@@ -1,6 +1,6 @@
 //
 //  ReactionPickerView.swift
-//  Textory
+//  Textery
 //
 //  iMessage-style floating reaction picker
 //

@@ -1,6 +1,6 @@
 //
 //  MessageType.swift
-//  Textory
+//  Textery
 //
 //  Enums for message types, delivery status, reactions, and receipt styles
 //

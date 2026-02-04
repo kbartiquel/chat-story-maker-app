@@ -1,6 +1,6 @@
 //
 //  ThemePickerView.swift
-//  Textory
+//  Textery
 //
 //  Horizontal theme picker
 //

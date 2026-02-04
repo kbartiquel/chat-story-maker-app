@@ -1,6 +1,6 @@
 //
 //  NewConversationView.swift
-//  Textory
+//  Textery
 //
 //  View for creating a new conversation (1-on-1 or group chat)
 //

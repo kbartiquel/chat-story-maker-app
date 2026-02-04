@@ -1,6 +1,6 @@
 //
 //  ServerExportService.swift
-//  Textory
+//  Textery
 //
 //  Service for rendering videos via the Python server API
 //

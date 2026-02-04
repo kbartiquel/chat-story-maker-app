@@ -1,6 +1,6 @@
 //
 //  PaywallSettingsService.swift
-//  Textory
+//  Textery
 //
 //  Service for fetching and caching paywall configuration from server
 //
