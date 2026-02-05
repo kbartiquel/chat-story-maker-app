@@ -146,27 +146,29 @@ struct ChatEditorView: View {
     private var iMessageNavBar: some View {
         ZStack {
             // Center: Avatar and Name
-            VStack(spacing: 2) {
-                if conversation.isGroupChat {
-                    // Group chat: stacked avatars
-                    groupAvatarStack
-                } else {
-                    // 1-on-1: single contact avatar
-                    contactAvatar
-                }
-
-                HStack(spacing: 2) {
-                    Text(conversation.isGroupChat ? conversation.title : (mainContact?.name ?? conversation.title))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(.secondary)
-                }
-            }
-            .onTapGesture {
+            Button {
                 editedTitle = conversation.title
                 showTitleEditor = true
+            } label: {
+                VStack(spacing: 2) {
+                    if conversation.isGroupChat {
+                        // Group chat: stacked avatars
+                        groupAvatarStack
+                    } else {
+                        // 1-on-1: single contact avatar
+                        contactAvatar
+                    }
+
+                    HStack(spacing: 2) {
+                        Text(conversation.isGroupChat ? conversation.title : (mainContact?.name ?? conversation.title))
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
 
             // Left: Back button
