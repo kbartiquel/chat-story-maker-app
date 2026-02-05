@@ -148,7 +148,10 @@ class AIGeneratorViewModel {
             }
         }
 
-        // Add messages with correct character IDs
+        // Add messages with correct character IDs and realistic timestamps
+        // Start conversation a few hours ago
+        var currentTime = Date().addingTimeInterval(-Double(story.messages.count) * 120) // ~2 min per message back
+
         for (index, genMessage) in story.messages.enumerated() {
             if let characterId = characterIdMap[genMessage.characterId] {
                 let message = Message(
@@ -156,6 +159,16 @@ class AIGeneratorViewModel {
                     characterID: characterId,
                     order: index
                 )
+
+                // Set realistic timestamp with random delay (15 sec to 3 min between messages)
+                message.displayTime = currentTime
+                currentTime = currentTime.addingTimeInterval(Double.random(in: 15...180))
+
+                // Show timestamp on first message
+                if index == 0 {
+                    message.showTimestamp = true
+                }
+
                 conversation.messages.append(message)
             }
         }
