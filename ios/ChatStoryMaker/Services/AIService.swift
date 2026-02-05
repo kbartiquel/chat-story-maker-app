@@ -84,9 +84,9 @@ class AIService {
 
         var displayName: String {
             switch self {
-            case .short: return "Short (~10)"
-            case .medium: return "Medium (~18)"
-            case .long: return "Long (~30)"
+            case .short: return "Short"
+            case .medium: return "Medium"
+            case .long: return "Long"
             }
         }
     }
