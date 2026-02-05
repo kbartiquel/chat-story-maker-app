@@ -116,9 +116,9 @@ struct ChatHeaderView: View {
                 Text(emoji)
                     .font(.system(size: size * 0.5))
             } else {
-                Image(systemName: "person.fill")
-                    .font(.system(size: size * 0.4))
-                    .foregroundColor(.white.opacity(0.8))
+                Text(String(character.name.prefix(1)).uppercased())
+                    .font(.system(size: size * 0.4, weight: .semibold))
+                    .foregroundColor(.white)
             }
         }
     }

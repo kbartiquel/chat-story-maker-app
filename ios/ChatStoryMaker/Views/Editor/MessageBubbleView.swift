@@ -175,6 +175,10 @@ struct MessageBubbleView: View {
             } else if let emoji = character?.avatarEmoji, !emoji.isEmpty {
                 Text(emoji)
                     .font(.system(size: 16))
+            } else if let name = character?.name, !name.isEmpty {
+                Text(String(name.prefix(1)).uppercased())
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
             } else {
                 Image(systemName: "person.fill")
                     .font(.system(size: 14))

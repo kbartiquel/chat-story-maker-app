@@ -90,9 +90,9 @@ struct CharacterButton: View {
                         Text(emoji)
                             .font(.system(size: 14))
                     } else {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.white.opacity(0.8))
+                        Text(String(character.name.prefix(1)).uppercased())
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
                     }
                 }
 
