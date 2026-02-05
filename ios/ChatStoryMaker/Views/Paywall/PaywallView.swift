@@ -281,6 +281,33 @@ struct PlanDisplayInfo {
 
 @MainActor
 class PaywallViewModel: ObservableObject {
+
+    // ===== DEBUG TEST FLAGS =====
+    // Set all to false for production or to use actual App Store offers
+    // These simulate intro offers without needing App Store Connect setup
+
+    // Yearly: Test free trial (e.g., "FREE for 3 days, then $29.99/year")
+    private let testYearlyFreeTrial = true
+    private let testYearlyFreeTrialDays = 3
+    private let testYearlyPrice = "$29.99"
+
+    // Monthly: Test free trial (e.g., "FREE for 3 days, then $9.99/month")
+    private let testMonthlyFreeTrial = false
+    private let testMonthlyFreeTrialDays = 3
+    private let testMonthlyPrice = "$9.99"
+
+    // Weekly: Test paid intro (e.g., "$0.99 first week, then $4.99/week")
+    private let testWeeklyPaidIntro = false
+    private let testWeeklyIntroPrice = "$0.99"
+    private let testWeeklyPrice = "$4.99"
+
+    // Weekly: Test free trial (e.g., "FREE for 3 days, then $4.99/week")
+    // Note: If both testWeeklyPaidIntro and testWeeklyFreeTrial are true, paid intro takes priority
+    private let testWeeklyFreeTrial = false
+    private let testWeeklyFreeTrialDays = 3
+
+    // ===== END DEBUG FLAGS =====
+
     @Published var offering: Offering?
     @Published var yearlyPackage: Package?
     @Published var monthlyPackage: Package?
@@ -333,6 +360,21 @@ class PaywallViewModel: ObservableObject {
         let price = product.price as Decimal
         let priceString = product.localizedPriceString
 
+        // Check for test mode based on period
+        let isTestingFreeTrial: Bool
+        let testFreeTrialDays: Int
+        let testPrice: String
+
+        if periodName == "year" {
+            isTestingFreeTrial = testYearlyFreeTrial
+            testFreeTrialDays = testYearlyFreeTrialDays
+            testPrice = testYearlyPrice
+        } else {
+            isTestingFreeTrial = testMonthlyFreeTrial
+            testFreeTrialDays = testMonthlyFreeTrialDays
+            testPrice = testMonthlyPrice
+        }
+
         // Calculate per-week price
         let perWeekPrice = NSDecimalNumber(decimal: price / Decimal(weeksPerPeriod)).doubleValue
         let currencySymbol = extractCurrencySymbol(from: priceString)
@@ -349,8 +391,14 @@ class PaywallViewModel: ObservableObject {
         var secondaryInfo: String
         var isFreeOffer = false
 
-        if isFreeIntro, let intro = intro {
-            // Free trial
+        // DEBUG: Test free trial override
+        if isTestingFreeTrial {
+            let unit = testFreeTrialDays == 1 ? "day" : "days"
+            priceInfo = "FREE for \(testFreeTrialDays) \(unit)"
+            secondaryInfo = "then \(testPrice)/\(periodName)"
+            isFreeOffer = true
+        } else if isFreeIntro, let intro = intro {
+            // Real free trial from App Store
             let units = intro.subscriptionPeriod.value
             let unit = formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)
             priceInfo = "FREE for \(units) \(unit)"
@@ -396,8 +444,24 @@ class PaywallViewModel: ObservableObject {
         var badgeColor: Color = .orange
         var isFreeOffer = false
 
-        if isFreeIntro, let intro = intro {
-            // Free trial
+        // DEBUG: Test paid intro override (takes priority)
+        if testWeeklyPaidIntro {
+            priceInfo = "\(testWeeklyIntroPrice) first week"
+            secondaryInfo = "then \(testWeeklyPrice)/week"
+            badge = "MOST POPULAR"
+            badgeColor = .orange
+        }
+        // DEBUG: Test free trial override
+        else if testWeeklyFreeTrial {
+            let unit = testWeeklyFreeTrialDays == 1 ? "day" : "days"
+            priceInfo = "FREE for \(testWeeklyFreeTrialDays) \(unit)"
+            secondaryInfo = "then \(testWeeklyPrice)/week"
+            badge = "TRY FREE"
+            badgeColor = Color(hex: "#1A9E6D")
+            isFreeOffer = true
+        }
+        // Real free trial from App Store
+        else if isFreeIntro, let intro = intro {
             let units = intro.subscriptionPeriod.value
             let unit = formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)
             priceInfo = "FREE for \(units) \(unit)"
@@ -405,15 +469,17 @@ class PaywallViewModel: ObservableObject {
             badge = "TRY FREE"
             badgeColor = Color(hex: "#1A9E6D")
             isFreeOffer = true
-        } else if isPaidIntro, let intro = intro {
-            // Paid intro offer
+        }
+        // Real paid intro from App Store
+        else if isPaidIntro, let intro = intro {
             let introPrice = intro.localizedPriceString
             priceInfo = "\(introPrice) first week"
             secondaryInfo = "then \(priceString)/week"
             badge = "MOST POPULAR"
             badgeColor = .orange
-        } else {
-            // No intro
+        }
+        // No intro
+        else {
             priceInfo = priceString
             secondaryInfo = "Billed weekly"
         }
@@ -461,6 +527,19 @@ class PaywallViewModel: ObservableObject {
     // MARK: - Button Text
 
     var buttonText: String {
+        // Check for test free trial flags first
+        switch selectedPlan {
+        case "yearly":
+            if testYearlyFreeTrial { return "Try For FREE" }
+        case "monthly":
+            if testMonthlyFreeTrial { return "Try For FREE" }
+        case "weekly":
+            if testWeeklyFreeTrial { return "Try For FREE" }
+        default:
+            break
+        }
+
+        // Check real intro offers
         let package: Package?
         switch selectedPlan {
         case "yearly": package = yearlyPackage
