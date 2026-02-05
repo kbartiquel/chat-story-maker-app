@@ -78,9 +78,9 @@ class AIService {
     }
 
     enum MessageLength: Int, CaseIterable {
-        case short = 10
-        case medium = 18
-        case long = 30
+        case short = 8
+        case medium = 12
+        case long = 20
 
         var displayName: String {
             switch self {
