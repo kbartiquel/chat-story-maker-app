@@ -26,11 +26,6 @@ struct ContentView: View {
                         Label("Generate", systemImage: "sparkles")
                     }
 
-                ExportHistoryTabView()
-                    .tabItem {
-                        Label("Exports", systemImage: "square.and.arrow.up.on.square")
-                    }
-
                 SettingsView()
                     .tabItem {
                         Label("Settings", systemImage: "gearshape.fill")
