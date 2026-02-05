@@ -71,8 +71,20 @@ def _create_prompt(
         "casual": "Relaxed, natural, and everyday tone"
     }
 
-    genre_desc = genre_descriptions.get(genre.lower(), f"A {genre} themed story")
-    mood_desc = mood_descriptions.get(mood.lower(), f"A {mood} tone")
+    # Handle "auto" - let AI decide based on the story topic
+    if genre.lower() == "auto":
+        genre_desc = "Choose the best genre that fits the story topic naturally"
+        genre_line = "Genre: AUTO - You decide the best genre based on the topic"
+    else:
+        genre_desc = genre_descriptions.get(genre.lower(), f"A {genre} themed story")
+        genre_line = f"Genre: {genre.upper()} - {genre_desc}"
+
+    if mood.lower() == "auto":
+        mood_desc = "Choose the best mood that fits the story naturally"
+        mood_line = "Mood: AUTO - You decide the best mood based on the topic"
+    else:
+        mood_desc = mood_descriptions.get(mood.lower(), f"A {mood} tone")
+        mood_line = f"Mood: {mood.upper()} - {mood_desc}"
 
     # Build character instructions
     is_group_chat = num_characters > 2
@@ -100,8 +112,8 @@ GROUP CHAT NAME:
 Generate a compelling text message conversation about: {topic}
 
 STORY REQUIREMENTS:
-- Genre: {genre.upper()} - {genre_desc}
-- Mood: {mood.upper()} - {mood_desc}
+- {genre_line}
+- {mood_line}
 - Number of messages: Exactly {num_messages} messages
 - {char_instruction}
 {group_name_instruction}

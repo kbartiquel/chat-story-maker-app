@@ -11,11 +11,11 @@ import SwiftData
 @Observable
 class AIGeneratorViewModel {
     var prompt = ""
-    var selectedGenre: AIService.Genre? = .drama
-    var selectedMood: AIService.Mood? = .dramatic
+    var selectedGenre: AIService.Genre? = nil  // nil = AI decides based on story
+    var selectedMood: AIService.Mood? = nil    // nil = AI decides based on story
     var customGenre = ""
     var customMood = ""
-    var selectedLength: AIService.MessageLength = .medium
+    var selectedLength: AIService.MessageLength = .short
     var numCharacters: Int = 2
 
     var isGenerating = false
@@ -45,20 +45,20 @@ class AIGeneratorViewModel {
         numCharacters > 2
     }
 
-    // Get effective genre string (preset or custom)
+    // Get effective genre string (preset, custom, or auto)
     var effectiveGenre: String {
         if let genre = selectedGenre {
             return genre.rawValue
         }
-        return customGenre.isEmpty ? "drama" : customGenre
+        return customGenre.isEmpty ? "auto" : customGenre  // "auto" = AI decides based on story
     }
 
-    // Get effective mood string (preset or custom)
+    // Get effective mood string (preset, custom, or auto)
     var effectiveMood: String {
         if let mood = selectedMood {
             return mood.rawValue
         }
-        return customMood.isEmpty ? "dramatic" : customMood
+        return customMood.isEmpty ? "auto" : customMood  // "auto" = AI decides based on story
     }
 
     func setModelContext(_ context: ModelContext) {
@@ -183,11 +183,11 @@ class AIGeneratorViewModel {
 
     func reset() {
         prompt = ""
-        selectedGenre = .drama
-        selectedMood = .dramatic
+        selectedGenre = nil  // AI decides based on story
+        selectedMood = nil   // AI decides based on story
         customGenre = ""
         customMood = ""
-        selectedLength = .medium
+        selectedLength = .short
         numCharacters = 2
         generatedConversation = nil
         showingEditor = false
