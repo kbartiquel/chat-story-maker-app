@@ -59,9 +59,13 @@ struct MessageBubbleView: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            // Timestamp (if enabled)
+            // Timestamp (if enabled) - tap to edit
             if message.showTimestamp {
-                TimestampView(date: message.effectiveDisplayTime)
+                Button {
+                    onTimestamp?()
+                } label: {
+                    TimestampView(date: message.effectiveDisplayTime)
+                }
             }
 
             HStack(alignment: .bottom, spacing: 8) {
