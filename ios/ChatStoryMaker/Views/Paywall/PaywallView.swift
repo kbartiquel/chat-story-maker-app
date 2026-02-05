@@ -287,7 +287,7 @@ class PaywallViewModel: ObservableObject {
     // These simulate intro offers without needing App Store Connect setup
 
     // Yearly: Test free trial (e.g., "FREE for 3 days, then $29.99/year")
-    private let testYearlyFreeTrial = true
+    private let testYearlyFreeTrial = false
     private let testYearlyFreeTrialDays = 3
     private let testYearlyPrice = "$29.99"
 
