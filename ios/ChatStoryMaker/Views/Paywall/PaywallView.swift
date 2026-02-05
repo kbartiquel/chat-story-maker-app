@@ -2,7 +2,7 @@
 //  PaywallView.swift
 //  Textery
 //
-//  Custom paywall screen with plan selection
+//  Dynamic paywall with intro offer support
 //
 
 import SwiftUI
@@ -120,50 +120,23 @@ struct PaywallView: View {
             }
 
             // Bottom Section with Plans
-            VStack(spacing: 16) {
-                let settings = PaywallSettingsService.shared.getSettings()
-
-                // Yearly Package
-                if let yearlyPackage = viewModel.yearlyPackage, settings.paywallYearly {
-                    // Calculate savings vs weekly (52 weeks)
-                    let savingsBadge: String? = {
-                        guard let weeklyPackage = viewModel.weeklyPackage else { return nil }
-                        let weeklyAnnualCost = weeklyPackage.storeProduct.price as Decimal * 52
-                        let yearlyPrice = yearlyPackage.storeProduct.price as Decimal
-                        guard weeklyAnnualCost > 0 else { return nil }
-                        let savings = ((weeklyAnnualCost - yearlyPrice) / weeklyAnnualCost) * 100
-                        let savingsInt = Int(NSDecimalNumber(decimal: savings).doubleValue)
-                        return savingsInt > 0 ? "Save \(savingsInt)%" : nil
-                    }()
-
-                    planOption(
-                        title: "Yearly Plan",
-                        subtitle: "Billed yearly, cancel anytime",
-                        price: yearlyPackage.localizedPriceString,
-                        badge: savingsBadge,
-                        isSelected: viewModel.selectedPlan == "yearly",
-                        onTap: {
-                            viewModel.selectPlan("yearly")
-                        }
-                    )
+            VStack(spacing: 12) {
+                // Plan order: Yearly → Monthly → Weekly
+                if let plan = viewModel.yearlyPlanInfo {
+                    planOptionView(plan: plan, planId: "yearly")
                 }
 
-                // Weekly Package
-                if let weeklyPackage = viewModel.weeklyPackage, settings.paywallWeekly {
-                    planOption(
-                        title: "Weekly Plan",
-                        subtitle: "Billed weekly, cancel anytime",
-                        price: weeklyPackage.localizedPriceString,
-                        isSelected: viewModel.selectedPlan == "weekly",
-                        onTap: {
-                            viewModel.selectPlan("weekly")
-                        }
-                    )
+                if let plan = viewModel.monthlyPlanInfo {
+                    planOptionView(plan: plan, planId: "monthly")
+                }
+
+                if let plan = viewModel.weeklyPlanInfo {
+                    planOptionView(plan: plan, planId: "weekly")
                 }
 
                 // Purchase Button
                 Button(action: { viewModel.handlePurchase(onSuccess: { dismiss() }) }) {
-                    Text(viewModel.getButtonText())
+                    Text(viewModel.buttonText)
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -225,78 +198,83 @@ struct PaywallView: View {
         .padding(.horizontal, 20)
     }
 
-    private func planOption(
-        title: String,
-        subtitle: String? = nil,
-        price: String,
-        badge: String? = nil,
-        isSelected: Bool,
-        onTap: @escaping () -> Void
-    ) -> some View {
-        return Button(action: onTap) {
-            HStack(spacing: 12) {
-                // Left side: Title and subtitle
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black)
+    private func planOptionView(plan: PlanDisplayInfo, planId: String) -> some View {
+        let isSelected = viewModel.selectedPlan == planId
 
-                    if let subtitle = subtitle {
-                        Text(subtitle)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                    }
+        return Button(action: { viewModel.selectPlan(planId) }) {
+            HStack(spacing: 12) {
+                // Left side: Plan info (matching Quiz Maker AI layout)
+                VStack(alignment: .leading, spacing: 2) {
+                    // Plan name - small header
+                    Text(plan.title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.gray)
+                        .tracking(0.5)
+
+                    // Price info - THE BIG/PROMINENT ONE
+                    Text(plan.priceInfo)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(plan.isFreeOffer ? Color(hex: "#1A9E6D") : .black)
+
+                    // Secondary info
+                    Text(plan.secondaryInfo)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.gray)
                 }
 
                 Spacer()
 
-                // Right side: Price and Radio button
-                HStack(spacing: 8) {
-                    if subtitle != nil {
-                        Text(price)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.black)
-                    }
-
+                // Right side: Radio button on top, badge below
+                VStack(alignment: .trailing, spacing: 6) {
+                    // Radio button
                     ZStack {
                         Circle()
-                            .stroke(isSelected ? Color(hex: "#E07B5E") : Color.gray.opacity(0.3), lineWidth: 2)
-                            .frame(width: 24, height: 24)
+                            .stroke(isSelected ? Color(hex: "#E07B5E") : Color.gray.opacity(0.4), lineWidth: 2)
+                            .frame(width: 20, height: 20)
 
                         if isSelected {
                             Circle()
                                 .fill(Color(hex: "#E07B5E"))
-                                .frame(width: 24, height: 24)
+                                .frame(width: 10, height: 10)
+                        }
+                    }
 
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.white)
+                    // Badge below radio button
+                    if let badge = plan.badge {
+                        HStack(spacing: 2) {
+                            if plan.badgeColor == .orange {
+                                Text("🔥")
+                                    .font(.system(size: 11))
+                            }
+                            Text(badge)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(plan.badgeColor == Color(hex: "#1A9E6D") ? Color(hex: "#1A9E6D") : .gray)
+                                .tracking(0.3)
                         }
                     }
                 }
             }
-            .padding()
+            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
             .background(isSelected ? Color(hex: "#E07B5E").opacity(0.1) : Color.white)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(isSelected ? Color(hex: "#E07B5E") : Color.gray.opacity(0.3), lineWidth: 2)
             )
             .cornerRadius(12)
-            .overlay(alignment: .topTrailing) {
-                // Badge
-                if let badge = badge {
-                    Text(badge)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.red)
-                        .cornerRadius(4)
-                        .offset(x: -12, y: -10)
-                }
-            }
         }
     }
+}
+
+// MARK: - Plan Display Info
+
+struct PlanDisplayInfo {
+    let title: String
+    let priceInfo: String
+    let secondaryInfo: String
+    let badge: String?
+    let badgeColor: Color
+    let isFreeOffer: Bool
 }
 
 // MARK: - View Model
@@ -305,6 +283,7 @@ struct PaywallView: View {
 class PaywallViewModel: ObservableObject {
     @Published var offering: Offering?
     @Published var yearlyPackage: Package?
+    @Published var monthlyPackage: Package?
     @Published var weeklyPackage: Package?
     @Published var selectedPlan: String = "yearly"
     @Published var isLoading = true
@@ -325,6 +304,183 @@ class PaywallViewModel: ObservableObject {
         startRingingAnimation()
     }
 
+    // MARK: - Dynamic Plan Info
+
+    var yearlyPlanInfo: PlanDisplayInfo? {
+        guard let package = yearlyPackage else { return nil }
+        let settings = PaywallSettingsService.shared.getSettings()
+        guard settings.paywallYearly else { return nil }
+        return buildPlanInfo(package: package, weeksPerPeriod: 52, periodName: "year")
+    }
+
+    var monthlyPlanInfo: PlanDisplayInfo? {
+        guard let package = monthlyPackage else { return nil }
+        let settings = PaywallSettingsService.shared.getSettings()
+        guard settings.paywallMonthly else { return nil }
+        return buildPlanInfo(package: package, weeksPerPeriod: 4, periodName: "month")
+    }
+
+    var weeklyPlanInfo: PlanDisplayInfo? {
+        guard let package = weeklyPackage else { return nil }
+        let settings = PaywallSettingsService.shared.getSettings()
+        guard settings.paywallWeekly else { return nil }
+        return buildWeeklyPlanInfo(package: package)
+    }
+
+    private func buildPlanInfo(package: Package, weeksPerPeriod: Int, periodName: String) -> PlanDisplayInfo {
+        let product = package.storeProduct
+        let intro = product.introductoryDiscount
+        let price = product.price as Decimal
+        let priceString = product.localizedPriceString
+
+        // Calculate per-week price
+        let perWeekPrice = NSDecimalNumber(decimal: price / Decimal(weeksPerPeriod)).doubleValue
+        let currencySymbol = extractCurrencySymbol(from: priceString)
+        let perWeekFormatted = String(format: "%.2f", perWeekPrice)
+
+        // Title with per-week price (YEARLY, MONTHLY)
+        let title = "\(periodName.uppercased())LY (Only \(currencySymbol)\(perWeekFormatted)/week)"
+
+        // Determine intro offer type
+        let isFreeIntro = intro != nil && intro!.price == 0
+        let isPaidIntro = intro != nil && (intro!.price as Decimal) > 0
+
+        var priceInfo: String
+        var secondaryInfo: String
+        var isFreeOffer = false
+
+        if isFreeIntro, let intro = intro {
+            // Free trial
+            let units = intro.subscriptionPeriod.value
+            let unit = formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)
+            priceInfo = "FREE for \(units) \(unit)"
+            secondaryInfo = "then \(priceString)/\(periodName)"
+            isFreeOffer = true
+        } else if isPaidIntro, let intro = intro {
+            // Paid intro offer
+            let introPrice = intro.localizedPriceString
+            let units = intro.subscriptionPeriod.value
+            let unit = formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)
+            priceInfo = "\(introPrice) first \(unit)"
+            secondaryInfo = "then \(priceString)/\(periodName)"
+        } else {
+            // No intro
+            priceInfo = priceString
+            secondaryInfo = "Billed \(periodName)ly"
+        }
+
+        // Calculate savings badge
+        let savingsBadge = calculateSavingsVsWeekly(price: price, weeksPerPeriod: weeksPerPeriod)
+
+        return PlanDisplayInfo(
+            title: title,
+            priceInfo: priceInfo,
+            secondaryInfo: secondaryInfo,
+            badge: savingsBadge,
+            badgeColor: .gray,  // Gray text badge like Quiz Maker AI
+            isFreeOffer: isFreeOffer
+        )
+    }
+
+    private func buildWeeklyPlanInfo(package: Package) -> PlanDisplayInfo {
+        let product = package.storeProduct
+        let intro = product.introductoryDiscount
+        let priceString = product.localizedPriceString
+
+        let isFreeIntro = intro != nil && intro!.price == 0
+        let isPaidIntro = intro != nil && (intro!.price as Decimal) > 0
+
+        var priceInfo: String
+        var secondaryInfo: String
+        var badge: String? = nil
+        var badgeColor: Color = .orange
+        var isFreeOffer = false
+
+        if isFreeIntro, let intro = intro {
+            // Free trial
+            let units = intro.subscriptionPeriod.value
+            let unit = formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)
+            priceInfo = "FREE for \(units) \(unit)"
+            secondaryInfo = "then \(priceString)/week"
+            badge = "TRY FREE"
+            badgeColor = Color(hex: "#1A9E6D")
+            isFreeOffer = true
+        } else if isPaidIntro, let intro = intro {
+            // Paid intro offer
+            let introPrice = intro.localizedPriceString
+            priceInfo = "\(introPrice) first week"
+            secondaryInfo = "then \(priceString)/week"
+            badge = "MOST POPULAR"
+            badgeColor = .orange
+        } else {
+            // No intro
+            priceInfo = priceString
+            secondaryInfo = "Billed weekly"
+        }
+
+        return PlanDisplayInfo(
+            title: "WEEKLY",
+            priceInfo: priceInfo,
+            secondaryInfo: secondaryInfo,
+            badge: badge,
+            badgeColor: badgeColor,
+            isFreeOffer: isFreeOffer
+        )
+    }
+
+    private func extractCurrencySymbol(from priceString: String) -> String {
+        // Find first non-digit, non-decimal character
+        for char in priceString {
+            if !char.isNumber && char != "." && char != "," && char != " " {
+                return String(char)
+            }
+        }
+        return "$"
+    }
+
+    private func formatPeriodUnit(_ unit: SubscriptionPeriod.Unit, value: Int) -> String {
+        switch unit {
+        case .day: return value == 1 ? "day" : "days"
+        case .week: return value == 1 ? "week" : "weeks"
+        case .month: return value == 1 ? "month" : "months"
+        case .year: return value == 1 ? "year" : "years"
+        @unknown default: return "period"
+        }
+    }
+
+    private func calculateSavingsVsWeekly(price: Decimal, weeksPerPeriod: Int) -> String? {
+        guard let weeklyPackage = weeklyPackage else { return nil }
+        let weeklyPrice = weeklyPackage.storeProduct.price as Decimal
+        let weeklyAnnualized = weeklyPrice * Decimal(weeksPerPeriod)
+        guard weeklyAnnualized > 0 else { return nil }
+        let savings = ((weeklyAnnualized - price) / weeklyAnnualized) * 100
+        let savingsInt = Int(NSDecimalNumber(decimal: savings).doubleValue)
+        return savingsInt > 0 ? "SAVE \(savingsInt)%" : nil
+    }
+
+    // MARK: - Button Text
+
+    var buttonText: String {
+        let package: Package?
+        switch selectedPlan {
+        case "yearly": package = yearlyPackage
+        case "monthly": package = monthlyPackage
+        case "weekly": package = weeklyPackage
+        default: package = nil
+        }
+
+        guard let pkg = package else { return "Subscribe" }
+        let intro = pkg.storeProduct.introductoryDiscount
+
+        // Free trial shows "Try For FREE", everything else shows "Continue"
+        if let intro = intro, intro.price == 0 {
+            return "Try For FREE"
+        }
+        return "Continue"
+    }
+
+    // MARK: - Load Offering
+
     func loadOffering(closeDelay: Int) {
         totalSeconds = closeDelay
         secondsRemaining = closeDelay
@@ -335,15 +491,11 @@ class PaywallViewModel: ObservableObject {
                let offering = offerings.current {
                 self.offering = offering
                 self.yearlyPackage = offering.annual
+                self.monthlyPackage = offering.monthly
                 self.weeklyPackage = offering.weekly
 
-                // Set initial selected plan
-                let settings = PaywallSettingsService.shared.getSettings()
-                if settings.paywallYearly && self.yearlyPackage != nil {
-                    self.selectedPlan = "yearly"
-                } else if settings.paywallWeekly && self.weeklyPackage != nil {
-                    self.selectedPlan = "weekly"
-                }
+                // Smart default selection
+                selectDefaultPlan()
 
                 self.isLoading = false
                 startCloseTimer()
@@ -352,6 +504,36 @@ class PaywallViewModel: ObservableObject {
                 self.errorMessage = "Failed to load subscription options"
                 self.showError = true
             }
+        }
+    }
+
+    private func selectDefaultPlan() {
+        let settings = PaywallSettingsService.shared.getSettings()
+
+        // Check if weekly has paid intro (most attractive offer)
+        if let weeklyPackage = weeklyPackage,
+           let intro = weeklyPackage.storeProduct.introductoryDiscount,
+           (intro.price as Decimal) > 0,
+           settings.paywallWeekly {
+            selectedPlan = "weekly"
+            return
+        }
+
+        // Otherwise prefer yearly
+        if yearlyPackage != nil && settings.paywallYearly {
+            selectedPlan = "yearly"
+            return
+        }
+
+        // Fallback to monthly
+        if monthlyPackage != nil && settings.paywallMonthly {
+            selectedPlan = "monthly"
+            return
+        }
+
+        // Final fallback to weekly
+        if weeklyPackage != nil && settings.paywallWeekly {
+            selectedPlan = "weekly"
         }
     }
 
@@ -393,20 +575,13 @@ class PaywallViewModel: ObservableObject {
         selectedPlan = plan
     }
 
-    func getButtonText() -> String {
-        if selectedPlan == "yearly" {
-            return "Get Yearly Access"
-        } else {
-            return "Subscribe Now"
-        }
-    }
-
     func handlePurchase(onSuccess: @escaping () -> Void) {
         let package: Package?
-        if selectedPlan == "yearly" {
-            package = yearlyPackage
-        } else {
-            package = weeklyPackage
+        switch selectedPlan {
+        case "yearly": package = yearlyPackage
+        case "monthly": package = monthlyPackage
+        case "weekly": package = weeklyPackage
+        default: package = nil
         }
 
         guard let package = package else { return }
