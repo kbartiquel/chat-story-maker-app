@@ -20,6 +20,8 @@ struct ChatEditorView: View {
     @State private var reactionMessage: Message?
     @State private var timestampMessage: Message?
     @State private var statusMessage: Message?
+    @State private var showTitleEditor = false
+    @State private var editedTitle = ""
 
     init(conversation: Conversation) {
         self.conversation = conversation
@@ -115,6 +117,15 @@ struct ChatEditorView: View {
                 editingMessage = nil
             }
         }
+        .alert("Edit Name", isPresented: $showTitleEditor) {
+            TextField("Name", text: $editedTitle)
+            Button("Cancel", role: .cancel) {}
+            Button("Save") {
+                if !editedTitle.trimmingCharacters(in: .whitespaces).isEmpty {
+                    conversation.title = editedTitle.trimmingCharacters(in: .whitespaces)
+                }
+            }
+        }
         .overlay {
             ReactionPickerOverlay(isPresented: Binding(
                 get: { reactionMessage != nil },
@@ -154,7 +165,8 @@ struct ChatEditorView: View {
                 }
             }
             .onTapGesture {
-                // Could open contact/group details
+                editedTitle = conversation.title
+                showTitleEditor = true
             }
 
             // Left: Back button
@@ -207,9 +219,9 @@ struct ChatEditorView: View {
                     Text(emoji)
                         .font(.system(size: 24))
                 } else {
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(.white.opacity(0.8))
+                    Text(String(contact.name.prefix(1)).uppercased())
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(.white)
                 }
             }
         }
@@ -235,9 +247,9 @@ struct ChatEditorView: View {
                         Text(emoji)
                             .font(.system(size: 16))
                     } else {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.8))
+                        Text(String(participant.name.prefix(1)).uppercased())
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
                     }
                 }
                 .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
