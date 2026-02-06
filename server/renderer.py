@@ -182,8 +182,8 @@ class VideoRenderer:
         # Layout constants - iMessage style (no status bar)
         self.keyboard_height = int(216 * self.scale)
         self.input_bar_height = int(52 * self.scale)
-        # Both 1:1 and group chat have taller header with avatar(s)
-        self.header_height = int(120 * self.scale)
+        # Both 1:1 and group chat have header with avatar(s)
+        self.header_height = int(85 * self.scale)
         self.bubble_padding = int(16 * self.scale)
         self.avatar_size = int(28 * self.scale)
         self.avatar_margin = int(6 * self.scale)
@@ -1393,8 +1393,8 @@ class ScreenshotRenderer:
         # Determine if group chat
         self._is_group_chat = request.is_group_chat or len(request.characters) > 2
 
-        # Layout constants - same header height for both 1:1 and group chat
-        self.header_height = int(120 * self.scale)
+        # Layout constants - header height for both 1:1 and group chat
+        self.header_height = int(85 * self.scale)
         self.bubble_padding = int(16 * self.scale)
         self.avatar_size = int(28 * self.scale)
         self.avatar_margin = int(6 * self.scale)

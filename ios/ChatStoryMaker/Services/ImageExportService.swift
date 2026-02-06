@@ -31,7 +31,7 @@ class ImageExportService {
         let maxBubbleWidth = width * 0.75
 
         // Calculate total height needed
-        let headerHeight: CGFloat = 120 // Header bar
+        let headerHeight: CGFloat = 85 // Header bar
         var totalHeight: CGFloat = headerHeight + 16 // Header + padding
 
         for message in config.messages {
@@ -421,7 +421,7 @@ class ImageExportService {
         canvasWidth: CGFloat,
         darkMode: Bool
     ) -> CGFloat {
-        let headerHeight: CGFloat = 100
+        let headerHeight: CGFloat = 85
         let headerBgColor = darkMode ? UIColor(white: 0.1, alpha: 1) : UIColor.white
         let textColor = darkMode ? UIColor.white : UIColor.black
         let blueColor = UIColor.systemBlue
