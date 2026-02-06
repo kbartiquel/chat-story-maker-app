@@ -23,11 +23,6 @@ struct ExportView: View {
             ZStack {
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Credits badge (only for video exports, non-premium users)
-                        if viewModel.settings.exportType == .video && !viewModel.isPremium {
-                            creditsBadge
-                        }
-
                         // Export type picker
                         ExportTypePickerView(selectedType: $viewModel.settings.exportType)
 
@@ -104,28 +99,6 @@ struct ExportView: View {
             .fullScreenCover(isPresented: $viewModel.showPaywall) {
                 PaywallView(isLimitTriggered: true)
             }
-        }
-    }
-
-    private var creditsBadge: some View {
-        Button {
-            viewModel.showPaywall = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "film")
-                    .font(.system(size: 14))
-                Text("\(viewModel.remainingVideoExports) exports left")
-                    .font(.system(size: 14, weight: .medium))
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
-            }
-            .foregroundColor(viewModel.remainingVideoExports > 0 ? .accentColor : .red)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(
-                Capsule()
-                    .fill(viewModel.remainingVideoExports > 0 ? Color.accentColor.opacity(0.1) : Color.red.opacity(0.1))
-            )
         }
     }
 
