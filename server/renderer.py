@@ -1264,14 +1264,14 @@ class VideoRenderer:
             delay_ms = int(timing["time"] * 1000)
 
             inputs.extend(['-i', sound_path])
-            filter_parts.append(f'[{i}]adelay={delay_ms}|{delay_ms}[a{i}]')
+            filter_parts.append(f'[{i}]adelay={delay_ms}|{delay_ms},volume=1.0[a{i}]')
 
         if not inputs:
             return None
 
-        # Create mix filter
+        # Create mix filter - normalize=0 prevents volume reduction when mixing multiple inputs
         mix_inputs = ''.join([f'[a{i}]' for i in range(len(self.message_timings))])
-        filter_parts.append(f'{mix_inputs}amix=inputs={len(self.message_timings)}:duration=longest[out]')
+        filter_parts.append(f'{mix_inputs}amix=inputs={len(self.message_timings)}:duration=longest:normalize=0[out]')
 
         filter_complex = ';'.join(filter_parts)
 
