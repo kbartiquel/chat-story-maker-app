@@ -265,14 +265,6 @@ struct ChatEditorView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 8) {
-                    // iMessage label at top
-                    VStack(spacing: 2) {
-                        Text("iMessage")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.top, 8)
-
                     ForEach(viewModel.sortedMessages) { message in
                         MessageBubbleView(
                             message: message,

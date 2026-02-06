@@ -32,7 +32,7 @@ class ImageExportService {
 
         // Calculate total height needed
         let headerHeight: CGFloat = 120 // Header bar
-        var totalHeight: CGFloat = headerHeight + 40 // Header + iMessage label
+        var totalHeight: CGFloat = headerHeight + 16 // Header + padding
 
         for message in config.messages {
             let character = config.getCharacter(message.characterID)
@@ -83,16 +83,7 @@ class ImageExportService {
                 darkMode: config.settings.darkMode
             )
 
-            // Draw "iMessage" label
             var yOffset = headerHeight + 16
-            drawCenteredText(
-                "iMessage",
-                at: yOffset,
-                fontSize: 12,
-                color: UIColor.systemGray,
-                canvasWidth: width
-            )
-            yOffset += 24
 
             for message in config.messages {
                 let character = config.getCharacter(message.characterID)

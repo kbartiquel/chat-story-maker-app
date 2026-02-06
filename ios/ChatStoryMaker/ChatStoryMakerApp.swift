@@ -108,11 +108,6 @@ struct TexteryApp: App {
             let message = Message(text: text, characterID: characterID, order: index)
             message.status = status
 
-            // Add timestamp to first message
-            if index == 0 {
-                message.showTimestamp = true
-            }
-
             demoChat.messages.append(message)
         }
 
@@ -161,11 +156,6 @@ struct TexteryApp: App {
         for (index, (text, character, status)) in groupMessages.enumerated() {
             let message = Message(text: text, characterID: character.id, order: index)
             message.status = character.isMe ? status : .none
-
-            // Add timestamp to first message
-            if index == 0 {
-                message.showTimestamp = true
-            }
 
             groupChat.messages.append(message)
         }

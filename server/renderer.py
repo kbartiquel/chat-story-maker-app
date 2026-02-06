@@ -743,27 +743,10 @@ class VideoRenderer:
                 width=1
             )
 
-            # "iMessage" BELOW separator
-            label_font = get_font(int(11 * self.scale))
-            label_text = "iMessage"
-            bbox = draw.textbbox((0, 0), label_text, font=label_font)
-            label_width = bbox[2] - bbox[0]
-            label_x = (self.phone_width - label_width) // 2
-            label_y = separator_y + int(8 * self.scale)
-            draw.text((label_x, label_y), label_text, fill=gray_color, font=label_font)
-
-            # Time below iMessage
-            time_font = get_font(int(11 * self.scale))
-            time_text = "Today 9:41 AM"
-            bbox = draw.textbbox((0, 0), time_text, font=time_font)
-            time_width = bbox[2] - bbox[0]
-            time_x = (self.phone_width - time_width) // 2
-            time_y = label_y + int(14 * self.scale)
-            draw.text((time_x, time_y), time_text, fill=gray_color, font=time_font)
 
         else:
             # === GROUP CHAT HEADER ===
-            # Layout: [Back] [Stacked Avatars] | Group Name (optional) | X People | separator | iMessage + Time
+            # Layout: [Back] [Stacked Avatars] | Group Name (optional) | X People | separator
 
             group_avatar_size = int(32 * self.scale)  # Slightly smaller for group
 
@@ -822,23 +805,6 @@ class VideoRenderer:
                 width=1
             )
 
-            # "iMessage" label below separator
-            label_font = get_font(int(11 * self.scale))
-            label_text = "iMessage"
-            bbox = draw.textbbox((0, 0), label_text, font=label_font)
-            label_width = bbox[2] - bbox[0]
-            label_x = (self.phone_width - label_width) // 2
-            label_y = separator_y + int(8 * self.scale)
-            draw.text((label_x, label_y), label_text, fill=gray_color, font=label_font)
-
-            # Timestamp below iMessage
-            time_font = get_font(int(11 * self.scale))
-            time_text = "Today 9:40 PM"
-            bbox = draw.textbbox((0, 0), time_text, font=time_font)
-            time_width = bbox[2] - bbox[0]
-            time_x = (self.phone_width - time_width) // 2
-            time_y = label_y + int(14 * self.scale)
-            draw.text((time_x, time_y), time_text, fill=gray_color, font=time_font)
 
     def calculate_bubble_height(self, text: str, is_me: bool, character: Optional[Character]) -> int:
         """Calculate the height of a message bubble."""
@@ -1714,27 +1680,10 @@ class ScreenshotRenderer:
                 width=1
             )
 
-            # "iMessage" label
-            label_font = get_font(int(11 * self.scale))
-            label_text = "iMessage"
-            bbox = draw.textbbox((0, 0), label_text, font=label_font)
-            label_width = bbox[2] - bbox[0]
-            label_x = (self.width - label_width) // 2
-            label_y = separator_y + int(8 * self.scale)
-            draw.text((label_x, label_y), label_text, fill=gray_color, font=label_font)
-
-            # Time
-            time_font = get_font(int(11 * self.scale))
-            time_text = "Today 9:41 AM"
-            bbox = draw.textbbox((0, 0), time_text, font=time_font)
-            time_width = bbox[2] - bbox[0]
-            time_x = (self.width - time_width) // 2
-            time_y = label_y + int(14 * self.scale)
-            draw.text((time_x, time_y), time_text, fill=gray_color, font=time_font)
 
         else:
             # === GROUP CHAT HEADER ===
-            # Layout: [Back] [Stacked Avatars] | Group Name (optional) | X People | separator | iMessage + Time
+            # Layout: [Back] [Stacked Avatars] | Group Name (optional) | X People | separator
 
             group_avatar_size = int(32 * self.scale)  # Slightly smaller for group
 
@@ -1793,23 +1742,6 @@ class ScreenshotRenderer:
                 width=1
             )
 
-            # "iMessage" label below separator
-            label_font = get_font(int(11 * self.scale))
-            label_text = "iMessage"
-            bbox = draw.textbbox((0, 0), label_text, font=label_font)
-            label_width = bbox[2] - bbox[0]
-            label_x = (self.width - label_width) // 2
-            label_y = separator_y + int(8 * self.scale)
-            draw.text((label_x, label_y), label_text, fill=gray_color, font=label_font)
-
-            # Timestamp below iMessage
-            time_font = get_font(int(11 * self.scale))
-            time_text = "Today 9:40 PM"
-            bbox = draw.textbbox((0, 0), time_text, font=time_font)
-            time_width = bbox[2] - bbox[0]
-            time_x = (self.width - time_width) // 2
-            time_y = label_y + int(14 * self.scale)
-            draw.text((time_x, time_y), time_text, fill=gray_color, font=time_font)
 
     def draw_bubble(
         self,

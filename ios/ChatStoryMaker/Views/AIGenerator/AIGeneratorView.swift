@@ -16,10 +16,6 @@ struct AIGeneratorView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Credits badge (only show for non-premium users)
-                    if !viewModel.isPremium {
-                        creditsBadge
-                    }
 
                     // Prompt Section
                     PromptInputView(prompt: $viewModel.prompt)
@@ -72,27 +68,6 @@ struct AIGeneratorView: View {
         }
     }
 
-    private var creditsBadge: some View {
-        Button {
-            viewModel.showPaywall = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 14))
-                Text("\(viewModel.remainingGenerations) generations left")
-                    .font(.system(size: 14, weight: .medium))
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
-            }
-            .foregroundColor(viewModel.remainingGenerations > 0 ? .purple : .red)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(
-                Capsule()
-                    .fill(viewModel.remainingGenerations > 0 ? Color.purple.opacity(0.1) : Color.red.opacity(0.1))
-            )
-        }
-    }
 
     private var generateButton: some View {
         Button(action: {
@@ -126,21 +101,26 @@ struct AIGeneratorView: View {
 struct PromptInputView: View {
     @Binding var prompt: String
 
+    private let coral = Color(red: 224/255, green: 123/255, blue: 94/255)
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("What's your story about?")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 6) {
+            Text("STORY IDEA")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(coral)
+                .padding(.leading, 4)
 
-            TextField("Describe your story idea...", text: $prompt, axis: .vertical)
+            TextField("Ex texts at 2am wanting to get back together, gets rejected", text: $prompt, axis: .vertical)
                 .lineLimit(3...6)
-                .padding(12)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-
-            Text("Be specific for better results")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.system(size: 17))
         }
+        .padding(16)
+        .background(Color(.systemBackground))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(coral, lineWidth: 2)
+        )
     }
 }
 

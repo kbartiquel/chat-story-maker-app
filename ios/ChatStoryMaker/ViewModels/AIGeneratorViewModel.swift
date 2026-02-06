@@ -164,11 +164,6 @@ class AIGeneratorViewModel {
                 message.displayTime = currentTime
                 currentTime = currentTime.addingTimeInterval(Double.random(in: 15...180))
 
-                // Show timestamp on first message
-                if index == 0 {
-                    message.showTimestamp = true
-                }
-
                 conversation.messages.append(message)
             }
         }
