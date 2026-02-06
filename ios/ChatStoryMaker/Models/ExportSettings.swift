@@ -89,6 +89,20 @@ enum ExportType: String, CaseIterable {
         case .screenshot: return "camera.fill"
         }
     }
+
+    var emoji: String {
+        switch self {
+        case .video: return "🎬"
+        case .screenshot: return "📸"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .video: return "MP4 with animation"
+        case .screenshot: return "PNG image"
+        }
+    }
 }
 
 enum ImageQuality: String, CaseIterable {

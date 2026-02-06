@@ -23,19 +23,26 @@ struct ExportView: View {
             ZStack {
                 ScrollView {
                     VStack(spacing: 24) {
+                        // Format picker
+                        FormatPickerView(selectedFormat: $viewModel.settings.format)
+
                         // Export type picker
                         ExportTypePickerView(selectedType: $viewModel.settings.exportType)
 
                         // Preview area
-                        VideoPreviewView(
-                            conversation: viewModel.conversation,
-                            settings: viewModel.settings
-                        )
+                        VStack(spacing: 12) {
+                            Text("PREVIEW")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.secondary)
 
-                        // Format picker (video only)
-                        if viewModel.settings.exportType == .video {
-                            FormatPickerView(selectedFormat: $viewModel.settings.format)
+                            VideoPreviewView(
+                                conversation: viewModel.conversation,
+                                settings: viewModel.settings
+                            )
                         }
+                        .padding(16)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(16)
 
                         // Settings
                         ExportSettingsSection(
@@ -148,32 +155,38 @@ struct ExportView: View {
 struct ExportTypePickerView: View {
     @Binding var selectedType: ExportType
 
+    private let coral = Color(red: 224/255, green: 123/255, blue: 94/255)
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Export Type")
-                .font(.headline)
+            Text("EXPORT TYPE")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(coral)
 
             HStack(spacing: 12) {
                 ForEach(ExportType.allCases, id: \.self) { type in
+                    let isSelected = selectedType == type
                     Button(action: {
                         selectedType = type
                         HapticManager.selection()
                     }) {
                         VStack(spacing: 8) {
-                            Image(systemName: type.icon)
-                                .font(.title2)
+                            Text(type.emoji)
+                                .font(.system(size: 36))
                             Text(type.displayName)
-                                .font(.subheadline)
-                                .fontWeight(selectedType == type ? .semibold : .regular)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text(type.subtitle)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(selectedType == type ? Color.accentColor.opacity(0.1) : Color(.systemGray6))
-                        .foregroundColor(selectedType == type ? .accentColor : .primary)
-                        .cornerRadius(10)
+                        .padding(.vertical, 20)
+                        .background(isSelected ? coral.opacity(0.1) : Color(.systemGray6))
+                        .cornerRadius(14)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(selectedType == type ? Color.accentColor : Color.clear, lineWidth: 2)
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(isSelected ? coral : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
                         )
                     }
                 }
@@ -206,12 +219,6 @@ struct VideoPreviewView: View {
                             .padding(.bottom, 8)
 
                         Divider()
-
-                        // iMessage label
-                        Text("iMessage")
-                            .font(.system(size: 10))
-                            .foregroundColor(.gray)
-                            .padding(.top, 6)
 
                         // Messages
                         VStack(spacing: 6) {
@@ -400,48 +407,40 @@ struct VideoPreviewView: View {
 struct FormatPickerView: View {
     @Binding var selectedFormat: ExportFormat
 
+    private let coral = Color(red: 224/255, green: 123/255, blue: 94/255)
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Format")
-                .font(.headline)
+            Text("FORMAT")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(coral)
 
             HStack(spacing: 12) {
                 ForEach(ExportFormat.allCases, id: \.self) { format in
-                    FormatButton(
-                        format: format,
-                        isSelected: selectedFormat == format,
-                        onTap: { selectedFormat = format }
-                    )
+                    let isSelected = selectedFormat == format
+                    Button(action: {
+                        selectedFormat = format
+                        HapticManager.selection()
+                    }) {
+                        VStack(spacing: 6) {
+                            Text(format.displayName)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text(format.aspectRatio)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
+                        .background(isSelected ? coral.opacity(0.1) : Color(.systemGray6))
+                        .cornerRadius(14)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(isSelected ? coral : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
+                        )
+                    }
                 }
             }
-        }
-    }
-}
-
-struct FormatButton: View {
-    let format: ExportFormat
-    let isSelected: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 6) {
-                Text(format.displayName)
-                    .font(.subheadline)
-                    .fontWeight(isSelected ? .semibold : .regular)
-                Text(format.aspectRatio)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(isSelected ? Color.accentColor.opacity(0.1) : Color(.systemGray6))
-            .foregroundColor(isSelected ? .accentColor : .primary)
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
-            )
         }
     }
 }
