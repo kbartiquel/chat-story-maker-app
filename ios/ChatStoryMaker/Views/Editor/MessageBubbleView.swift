@@ -108,7 +108,7 @@ struct MessageBubbleView: View {
                                 }
                             }
                             Button(action: { onTimestamp?() }) {
-                                Label(message.showTimestamp ? "Hide Time" : "Show Time", systemImage: "clock")
+                                Label("Edit Time", systemImage: "clock")
                             }
                             if isMe {
                                 Button(action: { onStatus?() }) {
