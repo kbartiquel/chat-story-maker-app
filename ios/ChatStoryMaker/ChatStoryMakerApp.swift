@@ -65,108 +65,220 @@ struct TexteryApp: App {
         let context = container.mainContext
 
         // Check if demo chats already exist
-        let descriptor = FetchDescriptor<Conversation>(
-            predicate: #Predicate { $0.title == "Demo Chat" || $0.title == "Family Group 👨‍👩‍👧‍👦" }
-        )
+        let descriptor = FetchDescriptor<Conversation>()
 
         do {
             let existing = try context.fetch(descriptor)
-            if existing.count >= 2 { return }
+            if existing.count >= 6 { return }
+            // Delete old demos to recreate with full set
+            for conv in existing { context.delete(conv) }
         } catch {
             print("Failed to check for demo chat: \(error)")
         }
 
-        // MARK: - Create 1-on-1 Demo Chat
-        let demoChat = Conversation(title: "Demo Chat")
+        // MARK: - 1. Ex Texts at 2AM
+        let exChat = Conversation(title: "Ex Texts at 2AM Wanting to Get Back Together")
 
-        // Update character names
-        if let sender = demoChat.characters.first(where: { $0.isMe }) {
+        if let sender = exChat.characters.first(where: { $0.isMe }) {
             sender.name = "Me"
-            sender.avatarEmoji = "😊"
         }
-        if let receiver = demoChat.characters.first(where: { !$0.isMe }) {
-            receiver.name = "Jane"
-            receiver.colorHex = "#34C759"
-            receiver.avatarEmoji = "👩"
+        if let receiver = exChat.characters.first(where: { !$0.isMe }) {
+            receiver.name = "Jordan"
+            receiver.colorHex = "#FF3B30"
         }
 
-        // Add demo messages
-        let messages: [(String, Bool, DeliveryStatus)] = [
-            ("Hey! How's it going? 👋", false, .none),
-            ("I'm doing great, thanks for asking!", true, .delivered),
-            ("Are you free this weekend?", false, .none),
-            ("Let me check my schedule...", true, .read),
-            ("Yes! I'm free on Saturday 🎉", true, .read),
-            ("Perfect! Let's grab coffee ☕", false, .none),
+        let exMessages: [(String, Bool, DeliveryStatus)] = [
+            ("hey", false, .none),
+            ("are you up?", false, .none),
+            ("i miss you so much", false, .none),
+            ("jordan its 2am", true, .delivered),
+            ("i know but i cant stop thinking about us", false, .none),
+            ("we broke up for a reason", true, .read),
+            ("i know but what if we gave it another shot", false, .none),
+            ("no. goodnight jordan.", true, .read),
         ]
 
-        for (index, (text, isMe, status)) in messages.enumerated() {
-            let characterID = isMe
-                ? demoChat.characters.first(where: { $0.isMe })!.id
-                : demoChat.characters.first(where: { !$0.isMe })!.id
-
-            let message = Message(text: text, characterID: characterID, order: index)
-            message.status = status
-
-            demoChat.messages.append(message)
+        for (index, (text, isMe, status)) in exMessages.enumerated() {
+            let charID = isMe
+                ? exChat.characters.first(where: { $0.isMe })!.id
+                : exChat.characters.first(where: { !$0.isMe })!.id
+            let msg = Message(text: text, characterID: charID, order: index)
+            msg.status = status
+            exChat.messages.append(msg)
         }
+        context.insert(exChat)
 
-        // Add a reaction to one message
-        if let lastReceiverMessage = demoChat.messages.last(where: {
-            demoChat.characters.first(where: { !$0.isMe })?.id == $0.characterID
-        }) {
-            let senderID = demoChat.characters.first(where: { $0.isMe })!.id
-            lastReceiverMessage.addReaction("❤️", from: senderID)
-        }
+        // MARK: - 2. My Ex Texted Me After 3 Years
+        let exChat2 = Conversation(title: "My Ex Texted Me After 3 Years")
 
-        context.insert(demoChat)
-
-        // MARK: - Create Group Chat Demo
-        let groupChat = Conversation(title: "Family Group 👨‍👩‍👧‍👦", isGroupChat: true)
-
-        // Setup sender
-        if let sender = groupChat.characters.first(where: { $0.isMe }) {
+        if let sender = exChat2.characters.first(where: { $0.isMe }) {
             sender.name = "Me"
-            sender.avatarEmoji = "😊"
+        }
+        if let receiver = exChat2.characters.first(where: { !$0.isMe }) {
+            receiver.name = "Alex"
+            receiver.colorHex = "#AF52DE"
         }
 
-        // Add family members
-        let mom = Character(name: "Mom", colorHex: "#FF3B30", isMe: false, avatarEmoji: "👩")
-        let dad = Character(name: "Dad", colorHex: "#007AFF", isMe: false, avatarEmoji: "👨")
-        let sister = Character(name: "Sarah", colorHex: "#AF52DE", isMe: false, avatarEmoji: "👧")
-
-        groupChat.characters.append(mom)
-        groupChat.characters.append(dad)
-        groupChat.characters.append(sister)
-
-        // Group chat messages with character references
-        let senderID = groupChat.characters.first(where: { $0.isMe })!.id
-
-        let groupMessages: [(String, Character, DeliveryStatus)] = [
-            ("Hey everyone! 👋", mom, .none),
-            ("Don't forget dinner at 7pm tonight!", mom, .none),
-            ("I'll be there! 🍕", groupChat.characters.first(where: { $0.isMe })!, .delivered),
-            ("Can we do 7:30 instead? Running late from work", dad, .none),
-            ("Sure, 7:30 works!", mom, .none),
-            ("I'm bringing dessert! 🎂", sister, .none),
-            ("Awesome! Can't wait 😋", groupChat.characters.first(where: { $0.isMe })!, .read),
-            ("See you all soon! ❤️", mom, .none),
+        let exMessages2: [(String, Bool, DeliveryStatus)] = [
+            ("hey stranger", false, .none),
+            ("who is this", true, .delivered),
+            ("its alex... from college", false, .none),
+            ("oh wow. its been like 3 years", true, .read),
+            ("yeah i know. i saw your post and it made me think of you", false, .none),
+            ("alex... you literally ghosted me", true, .read),
+            ("i know and i feel terrible about it", false, .none),
+            ("can we get coffee and talk?", false, .none),
+            ("i dont think thats a good idea", true, .read),
+            ("please just hear me out", false, .none),
         ]
 
-        for (index, (text, character, status)) in groupMessages.enumerated() {
-            let message = Message(text: text, characterID: character.id, order: index)
-            message.status = character.isMe ? status : .none
+        for (index, (text, isMe, status)) in exMessages2.enumerated() {
+            let charID = isMe
+                ? exChat2.characters.first(where: { $0.isMe })!.id
+                : exChat2.characters.first(where: { !$0.isMe })!.id
+            let msg = Message(text: text, characterID: charID, order: index)
+            msg.status = status
+            exChat2.messages.append(msg)
+        }
+        context.insert(exChat2)
 
-            groupChat.messages.append(message)
+        // MARK: - 3. Family Group
+        let familyChat = Conversation(title: "Family Group", isGroupChat: true)
+
+        if let sender = familyChat.characters.first(where: { $0.isMe }) {
+            sender.name = "Me"
         }
 
-        // Add reactions to group chat
-        if let dessertMessage = groupChat.messages.first(where: { $0.text.contains("dessert") }) {
-            dessertMessage.addReaction("😍", from: senderID)
-            dessertMessage.addReaction("❤️", from: mom.id)
+        let mom = Character(name: "Mom", colorHex: "#FF3B30", isMe: false)
+        let dad = Character(name: "Dad", colorHex: "#007AFF", isMe: false)
+        let sister = Character(name: "Sarah", colorHex: "#AF52DE", isMe: false)
+
+        familyChat.characters.append(mom)
+        familyChat.characters.append(dad)
+        familyChat.characters.append(sister)
+
+        let familySender = familyChat.characters.first(where: { $0.isMe })!
+
+        let familyMessages: [(String, Character, DeliveryStatus)] = [
+            ("whos coming to thanksgiving this year?", mom, .none),
+            ("me and sarah for sure", familySender, .delivered),
+            ("ill be there! bringing pie", dad, .none),
+            ("omg dads making pie again", sister, .none),
+            ("whats wrong with my pie??", dad, .none),
+            ("nothing dad we love your pie", familySender, .read),
+            ("should i make two this year?", dad, .none),
+            ("YES", sister, .none),
+        ]
+
+        for (index, (text, character, status)) in familyMessages.enumerated() {
+            let msg = Message(text: text, characterID: character.id, order: index)
+            msg.status = character.isMe ? status : .none
+            familyChat.messages.append(msg)
+        }
+        context.insert(familyChat)
+
+        // MARK: - 4. The Trio (Friend Group)
+        let trioChat = Conversation(title: "the trio", isGroupChat: true)
+
+        if let sender = trioChat.characters.first(where: { $0.isMe }) {
+            sender.name = "Me"
         }
 
-        context.insert(groupChat)
+        let friend1 = Character(name: "Mia", colorHex: "#FF9500", isMe: false)
+        let friend2 = Character(name: "Chloe", colorHex: "#34C759", isMe: false)
+
+        trioChat.characters.append(friend1)
+        trioChat.characters.append(friend2)
+
+        let trioSender = trioChat.characters.first(where: { $0.isMe })!
+
+        let trioMessages: [(String, Character, DeliveryStatus)] = [
+            ("GIRLS", friend1, .none),
+            ("you will NOT believe what just happened", friend1, .none),
+            ("WHAT", friend2, .none),
+            ("tell us everything", trioSender, .delivered),
+            ("i ran into my ex at the grocery store", friend1, .none),
+            ("NO WAY", friend2, .none),
+            ("and he was with his new girlfriend", friend1, .none),
+            ("omg what did you do", trioSender, .read),
+            ("i pretended i didnt see them and hid behind the cereal aisle", friend1, .none),
+            ("LMAOOO", friend2, .none),
+        ]
+
+        for (index, (text, character, status)) in trioMessages.enumerated() {
+            let msg = Message(text: text, characterID: character.id, order: index)
+            msg.status = character.isMe ? status : .none
+            trioChat.messages.append(msg)
+        }
+        context.insert(trioChat)
+
+        // MARK: - 5. Wrong Number Horror
+        let horrorChat = Conversation(title: "Wrong Number Turned Creepy")
+
+        if let sender = horrorChat.characters.first(where: { $0.isMe }) {
+            sender.name = "Me"
+        }
+        if let receiver = horrorChat.characters.first(where: { !$0.isMe }) {
+            receiver.name = "Unknown"
+            receiver.colorHex = "#8E8E93"
+        }
+
+        let horrorMessages: [(String, Bool, DeliveryStatus)] = [
+            ("hey is this mike?", false, .none),
+            ("no sorry wrong number", true, .delivered),
+            ("thats weird because i got your number from your front door", false, .none),
+            ("what?? i dont have my number on my door", true, .read),
+            ("i know. i followed you home to get it.", false, .none),
+            ("this isnt funny. who is this?", true, .read),
+            ("look outside your window", false, .none),
+            ("im calling the police", true, .read),
+        ]
+
+        for (index, (text, isMe, status)) in horrorMessages.enumerated() {
+            let charID = isMe
+                ? horrorChat.characters.first(where: { $0.isMe })!.id
+                : horrorChat.characters.first(where: { !$0.isMe })!.id
+            let msg = Message(text: text, characterID: charID, order: index)
+            msg.status = status
+            horrorChat.messages.append(msg)
+        }
+        context.insert(horrorChat)
+
+        // MARK: - 6. Best Friend Confession
+        let confessionChat = Conversation(title: "Best Friend Has a Secret")
+
+        if let sender = confessionChat.characters.first(where: { $0.isMe }) {
+            sender.name = "Me"
+        }
+        if let receiver = confessionChat.characters.first(where: { !$0.isMe }) {
+            receiver.name = "Emma"
+            receiver.colorHex = "#FF2D55"
+        }
+
+        let confessionMessages: [(String, Bool, DeliveryStatus)] = [
+            ("hey can we talk about something", false, .none),
+            ("of course whats up", true, .delivered),
+            ("ive been keeping something from you", false, .none),
+            ("youre scaring me emma", true, .read),
+            ("its nothing bad i promise", false, .none),
+            ("then what is it", true, .read),
+            ("i think im in love with your brother", false, .none),
+            ("WHAT", true, .read),
+            ("please dont be mad", false, .none),
+            ("emma... how long??", true, .read),
+            ("like 2 years", false, .none),
+            ("TWO YEARS?!", true, .read),
+        ]
+
+        for (index, (text, isMe, status)) in confessionMessages.enumerated() {
+            let charID = isMe
+                ? confessionChat.characters.first(where: { $0.isMe })!.id
+                : confessionChat.characters.first(where: { !$0.isMe })!.id
+            let msg = Message(text: text, characterID: charID, order: index)
+            msg.status = status
+            confessionChat.messages.append(msg)
+        }
+        context.insert(confessionChat)
 
         do {
             try context.save()

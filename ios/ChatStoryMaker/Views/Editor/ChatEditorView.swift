@@ -74,7 +74,7 @@ struct ChatEditorView: View {
             )
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $viewModel.showingExport) {
+        .fullScreenCover(isPresented: $viewModel.showingExport) {
             ExportView(conversation: conversation)
         }
         .sheet(item: $editingCharacter) { character in
