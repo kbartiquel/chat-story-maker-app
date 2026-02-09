@@ -456,8 +456,6 @@ class PaywallViewModel: ObservableObject {
             let unit = testWeeklyFreeTrialDays == 1 ? "day" : "days"
             priceInfo = "FREE for \(testWeeklyFreeTrialDays) \(unit)"
             secondaryInfo = "then \(testWeeklyPrice)/week"
-            badge = "TRY FREE"
-            badgeColor = Color(hex: "#1A9E6D")
             isFreeOffer = true
         }
         // Real free trial from App Store
@@ -466,8 +464,6 @@ class PaywallViewModel: ObservableObject {
             let unit = formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)
             priceInfo = "FREE for \(units) \(unit)"
             secondaryInfo = "then \(priceString)/week"
-            badge = "TRY FREE"
-            badgeColor = Color(hex: "#1A9E6D")
             isFreeOffer = true
         }
         // Real paid intro from App Store
