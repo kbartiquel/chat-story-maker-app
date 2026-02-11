@@ -58,13 +58,13 @@ class ConversationViewModel {
         guard !hasLaunched, conversations.isEmpty else { return }
 
         // Create sample conversation
-        let sample = Conversation(title: "Sample Chat", theme: .imessage)
+        let sample = Conversation(title: "Sample Story", theme: .imessage)
 
         // Add sample messages
         let sampleMessages = [
             ("Hey! Welcome to Textery!", false),
             ("Thanks! This app looks cool", true),
-            ("You can create fake chat conversations and export them as videos!", false),
+            ("Create fictional story conversations and export them as videos!", false),
             ("Perfect for my TikTok content", true),
             ("Try adding more messages and then tap Export!", false)
         ]

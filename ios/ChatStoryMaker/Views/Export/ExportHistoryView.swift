@@ -15,9 +15,7 @@ struct ExportHistoryView: View {
     @Query(sort: \ExportHistory.exportDate, order: .reverse) private var history: [ExportHistory]
 
     @State private var selectedVideo: URL?
-    @State private var selectedImage: UIImage?
     @State private var showVideoPlayer = false
-    @State private var showImageViewer = false
     @State private var showShareSheet = false
     @State private var shareItems: [Any] = []
 
@@ -49,11 +47,6 @@ struct ExportHistoryView: View {
                     VideoPlayerView(url: url)
                 }
             }
-            .sheet(isPresented: $showImageViewer) {
-                if let image = selectedImage {
-                    ImageViewerSheet(image: image)
-                }
-            }
             .sheet(isPresented: $showShareSheet) {
                 ShareSheet(items: shareItems)
             }
@@ -67,7 +60,7 @@ struct ExportHistoryView: View {
                 .foregroundColor(.secondary)
             Text("No Export History")
                 .font(.title2.bold())
-            Text("Your exported videos and screenshots will appear here")
+            Text("Your exported videos will appear here")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
@@ -102,30 +95,19 @@ struct ExportHistoryView: View {
     }
 
     private func openExport(_ item: ExportHistory) {
-        if item.exportTypeEnum == .screenshot {
-            // Open screenshot
-            if let localPath = item.localPath,
-               FileManager.default.fileExists(atPath: localPath),
-               let image = UIImage(contentsOfFile: localPath) {
-                selectedImage = image
-                showImageViewer = true
-            }
-        } else {
-            // Open video
-            if let localPath = item.localPath {
-                let url = URL(fileURLWithPath: localPath)
-                if FileManager.default.fileExists(atPath: localPath) {
-                    selectedVideo = url
-                    showVideoPlayer = true
-                    return
-                }
-            }
-
-            if let videoURLString = item.videoURL,
-               let url = URL(string: videoURLString) {
+        if let localPath = item.localPath {
+            let url = URL(fileURLWithPath: localPath)
+            if FileManager.default.fileExists(atPath: localPath) {
                 selectedVideo = url
                 showVideoPlayer = true
+                return
             }
+        }
+
+        if let videoURLString = item.videoURL,
+           let url = URL(string: videoURLString) {
+            selectedVideo = url
+            showVideoPlayer = true
         }
     }
 
@@ -133,16 +115,8 @@ struct ExportHistoryView: View {
         if let localPath = item.localPath {
             let url = URL(fileURLWithPath: localPath)
             if FileManager.default.fileExists(atPath: localPath) {
-                if item.exportTypeEnum == .screenshot {
-                    // For screenshots, share the image
-                    if let image = UIImage(contentsOfFile: localPath) {
-                        shareItems = [image]
-                        showShareSheet = true
-                    }
-                } else {
-                    shareItems = [url]
-                    showShareSheet = true
-                }
+                shareItems = [url]
+                showShareSheet = true
                 return
             }
         }
@@ -171,31 +145,6 @@ struct ExportHistoryView: View {
     }
 }
 
-// MARK: - Image Viewer Sheet
-
-struct ImageViewerSheet: View {
-    let image: UIImage
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .padding()
-            }
-            .background(Color(.systemBackground))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Export History Row (Clean, no buttons)
 
 struct ExportHistoryRow: View {
@@ -210,14 +159,12 @@ struct ExportHistoryRow: View {
                     .cornerRadius(8)
 
                 // Play icon overlay
-                if item.exportTypeEnum == .video {
-                    Image(systemName: "play.fill")
-                        .font(.title3)
-                        .foregroundColor(.white)
-                        .padding(8)
-                        .background(Color.black.opacity(0.5))
-                        .clipShape(Circle())
-                }
+                Image(systemName: "play.fill")
+                    .font(.title3)
+                    .foregroundColor(.white)
+                    .padding(8)
+                    .background(Color.black.opacity(0.5))
+                    .clipShape(Circle())
             }
 
             // Info
@@ -260,7 +207,7 @@ struct ExportHistoryRow: View {
             ZStack {
                 Rectangle()
                     .fill(Color(.systemGray5))
-                Image(systemName: item.exportTypeEnum == .video ? "video.fill" : "photo.fill")
+                Image(systemName: "video.fill")
                     .foregroundColor(.secondary)
             }
         }
@@ -336,9 +283,7 @@ struct ExportHistoryTabView: View {
     @Query(sort: \ExportHistory.exportDate, order: .reverse) private var history: [ExportHistory]
 
     @State private var selectedVideo: URL?
-    @State private var selectedImage: UIImage?
     @State private var showVideoPlayer = false
-    @State private var showImageViewer = false
     @State private var showShareSheet = false
     @State private var shareItems: [Any] = []
 
@@ -370,11 +315,6 @@ struct ExportHistoryTabView: View {
                     VideoPlayerView(url: url)
                 }
             }
-            .sheet(isPresented: $showImageViewer) {
-                if let image = selectedImage {
-                    ImageViewerSheet(image: image)
-                }
-            }
             .sheet(isPresented: $showShareSheet) {
                 ShareSheet(items: shareItems)
             }
@@ -388,7 +328,7 @@ struct ExportHistoryTabView: View {
                 .foregroundColor(.secondary)
             Text("No Exports Yet")
                 .font(.title2.bold())
-            Text("Your exported videos and screenshots will appear here")
+            Text("Your exported videos will appear here")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -424,30 +364,19 @@ struct ExportHistoryTabView: View {
     }
 
     private func openExport(_ item: ExportHistory) {
-        if item.exportTypeEnum == .screenshot {
-            // Open screenshot
-            if let localPath = item.localPath,
-               FileManager.default.fileExists(atPath: localPath),
-               let image = UIImage(contentsOfFile: localPath) {
-                selectedImage = image
-                showImageViewer = true
-            }
-        } else {
-            // Open video
-            if let localPath = item.localPath {
-                let url = URL(fileURLWithPath: localPath)
-                if FileManager.default.fileExists(atPath: localPath) {
-                    selectedVideo = url
-                    showVideoPlayer = true
-                    return
-                }
-            }
-
-            if let videoURLString = item.videoURL,
-               let url = URL(string: videoURLString) {
+        if let localPath = item.localPath {
+            let url = URL(fileURLWithPath: localPath)
+            if FileManager.default.fileExists(atPath: localPath) {
                 selectedVideo = url
                 showVideoPlayer = true
+                return
             }
+        }
+
+        if let videoURLString = item.videoURL,
+           let url = URL(string: videoURLString) {
+            selectedVideo = url
+            showVideoPlayer = true
         }
     }
 
@@ -455,16 +384,8 @@ struct ExportHistoryTabView: View {
         if let localPath = item.localPath {
             let url = URL(fileURLWithPath: localPath)
             if FileManager.default.fileExists(atPath: localPath) {
-                if item.exportTypeEnum == .screenshot {
-                    // For screenshots, share the image
-                    if let image = UIImage(contentsOfFile: localPath) {
-                        shareItems = [image]
-                        showShareSheet = true
-                    }
-                } else {
-                    shareItems = [url]
-                    showShareSheet = true
-                }
+                shareItems = [url]
+                showShareSheet = true
                 return
             }
         }

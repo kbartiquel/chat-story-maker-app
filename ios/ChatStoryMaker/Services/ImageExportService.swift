@@ -478,8 +478,7 @@ class ImageExportService {
         let smallChevronAttrs: [NSAttributedString.Key: Any] = [.font: smallChevronFont, .foregroundColor: UIColor.systemGray]
         ">".draw(at: CGPoint(x: nameX + nameSize.width + 2, y: nameY + 1), withAttributes: smallChevronAttrs)
 
-        // Video icon (right)
-        drawVideoIcon(at: CGPoint(x: canvasWidth - 35, y: 45), size: 18, color: blueColor, context: context)
+        // Video icon removed for App Store compliance
 
         return headerHeight
     }

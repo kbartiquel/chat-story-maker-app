@@ -17,7 +17,6 @@ class ExportViewModel {
     var exportProgress: Double = 0
     var exportedVideoURL: URL?
     var exportedImage: UIImage?
-    var exportedImages: [UIImage] = []  // For multi-page screenshots
     var showShareSheet = false
     var errorMessage: String?
     var showPaywall = false
@@ -27,7 +26,6 @@ class ExportViewModel {
 
     private let videoExportService = VideoExportService()
     private let serverExportService = ServerExportService()
-    private let imageExportService = ImageExportService()
 
     init(conversation: Conversation) {
         self.conversation = conversation
@@ -95,9 +93,6 @@ class ExportViewModel {
     var shareItems: [Any] {
         if let url = exportedVideoURL {
             return [url]
-        } else if !exportedImages.isEmpty {
-            // Share all images (for multi-page screenshots)
-            return exportedImages
         } else if let image = exportedImage {
             return [image]
         }
@@ -105,23 +100,13 @@ class ExportViewModel {
     }
 
     func export() async {
-        switch settings.exportType {
-        case .video:
-            await exportVideo()
-        case .screenshot:
-            await exportScreenshot()
-        }
+        await exportVideo()
     }
 
     // Called from button after isExporting is already set
     func startExport() async {
         errorMessage = nil
-        switch settings.exportType {
-        case .video:
-            await performVideoExport()
-        case .screenshot:
-            await performScreenshotExport()
-        }
+        await performVideoExport()
     }
 
     func exportVideo() async {
@@ -264,139 +249,4 @@ class ExportViewModel {
         }
     }
 
-    func exportScreenshot() async {
-        guard canExport else { return }
-
-        await MainActor.run {
-            isExporting = true
-            exportProgress = 0
-            errorMessage = nil
-        }
-
-        AnalyticsService.shared.trackExportStarted(
-            format: "screenshot",
-            aspectRatio: settings.format.rawValue,
-            isDarkMode: settings.darkMode
-        )
-
-        await performScreenshotExport()
-    }
-
-    private func performScreenshotExport() async {
-        // Use server-side rendering for consistent look with video exports
-        let exportMessages = conversation.sortedMessages.map { msg in
-            VideoExportService.ExportMessage(
-                id: msg.id,
-                text: msg.text,
-                characterID: msg.characterID
-            )
-        }
-
-        let exportCharacters = conversation.characters.map { char in
-            VideoExportService.ExportCharacter(
-                id: char.id,
-                name: char.name,
-                isMe: char.isMe,
-                colorHex: char.colorHex,
-                avatarEmoji: char.avatarEmoji,
-                avatarImageData: char.avatarImageData
-            )
-        }
-
-        let config = VideoExportService.ExportConfig(
-            messages: exportMessages,
-            characters: exportCharacters,
-            theme: conversation.theme,
-            settings: settings,
-            conversationTitle: conversation.title,
-            isGroupChat: conversation.isGroupChat
-        )
-
-        do {
-            let images = try await serverExportService.exportScreenshot(
-                config: config,
-                mode: settings.screenshotMode
-            )
-
-            // Save images to disk for export history
-            let savedPaths = saveScreenshotsToDocuments(images: images)
-
-            await MainActor.run {
-                self.exportedImages = images
-                self.exportedImage = images.first  // For backward compatibility
-                self.exportedVideoURL = nil
-                self.isExporting = false
-                self.showShareSheet = true
-
-                // Create export history with first image as thumbnail
-                if let firstPath = savedPaths.first {
-                    self.lastExportHistory = createScreenshotExportHistory(
-                        localPath: firstPath,
-                        thumbnailImage: images.first,
-                        pageCount: images.count
-                    )
-                }
-
-                HapticManager.notification(.success)
-                AnalyticsService.shared.trackExportCompleted(format: "screenshot", durationSeconds: 0)
-            }
-        } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isExporting = false
-                HapticManager.notification(.error)
-                AnalyticsService.shared.trackExportFailed(format: "screenshot", error: error.localizedDescription)
-            }
-        }
-    }
-
-    /// Save screenshots to documents directory
-    private func saveScreenshotsToDocuments(images: [UIImage]) -> [String] {
-        let fileManager = FileManager.default
-        let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let screenshotsFolder = documentsPath.appendingPathComponent("Screenshots")
-
-        // Create folder if needed
-        try? fileManager.createDirectory(at: screenshotsFolder, withIntermediateDirectories: true)
-
-        let timestamp = Int(Date().timeIntervalSince1970)
-        var savedPaths: [String] = []
-
-        for (index, image) in images.enumerated() {
-            let filename = "\(conversation.title.prefix(20))_\(timestamp)_\(index + 1).png"
-            let filePath = screenshotsFolder.appendingPathComponent(filename)
-
-            if let data = image.pngData() {
-                try? data.write(to: filePath)
-                savedPaths.append(filePath.path)
-            }
-        }
-
-        return savedPaths
-    }
-
-    /// Create export history for screenshot
-    private func createScreenshotExportHistory(localPath: String, thumbnailImage: UIImage?, pageCount: Int) -> ExportHistory {
-        var thumbnailData: Data?
-        if let image = thumbnailImage {
-            // Create smaller thumbnail
-            let size = CGSize(width: 200, height: 200 * 16 / 9)
-            UIGraphicsBeginImageContextWithOptions(size, false, 1.0)
-            image.draw(in: CGRect(origin: .zero, size: size))
-            let thumbnail = UIGraphicsGetImageFromCurrentImageContext()
-            UIGraphicsEndImageContext()
-            thumbnailData = thumbnail?.jpegData(compressionQuality: 0.6)
-        }
-
-        return ExportHistory(
-            conversationTitle: conversation.title,
-            exportType: settings.exportType,
-            renderMode: settings.renderMode,
-            format: settings.format,
-            localPath: localPath,
-            thumbnailData: thumbnailData,
-            duration: Double(pageCount),  // Use duration field to store page count
-            messageCount: conversation.messages.count
-        )
-    }
 }

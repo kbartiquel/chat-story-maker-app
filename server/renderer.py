@@ -702,30 +702,6 @@ class VideoRenderer:
             arrow_y = debug_line_y - arrow_font_size // 2 - int(8 * self.scale)  # Move up to center
             draw.text((arrow_x, arrow_y), "‹", fill=blue_color, font=arrow_font)
 
-            # Video icon - same vertical center as back arrow
-            assets_dir = os.path.join(os.path.dirname(__file__), "assets")
-            video_icon_path = os.path.join(assets_dir, "video_icon.png")
-
-            if os.path.exists(video_icon_path):
-                try:
-                    video_icon = Image.open(video_icon_path)
-                    if video_icon.mode != 'RGBA':
-                        video_icon = video_icon.convert('RGBA')
-
-                    # Scale to match back arrow height
-                    target_height = int(18 * self.scale)
-                    aspect_ratio = video_icon.width / video_icon.height
-                    target_width = int(target_height * aspect_ratio)
-                    video_icon_resized = video_icon.resize((target_width, target_height), Image.Resampling.LANCZOS)
-                    video_icon.close()  # Close original
-
-                    video_x = self.phone_width - target_width - int(16 * self.scale)
-                    video_y = debug_line_y - target_height // 2  # Centered on debug line
-                    img.paste(video_icon_resized, (video_x, video_y), video_icon_resized)
-                    video_icon_resized.close()  # Close resized
-                except Exception as e:
-                    print(f"Failed to load video icon: {e}")
-
             # Name with chevron below avatar
             name_font = get_font(int(13 * self.scale))
             name_text = f"{contact_name} ›"
@@ -1076,7 +1052,7 @@ class VideoRenderer:
             text_y_pos = input_y + (input_height - int(15 * self.scale)) // 2
             draw.text(
                 (text_x, text_y_pos),
-                "iMessage",
+                "Message",
                 fill=(128, 128, 128),
                 font=input_font
             )
@@ -1641,27 +1617,6 @@ class ScreenshotRenderer:
             arrow_x = int(10 * self.scale)
             arrow_y = icon_row_y - arrow_font_size // 2 - int(8 * self.scale)
             draw.text((arrow_x, arrow_y), "‹", fill=blue_color, font=arrow_font)
-
-            # Video icon
-            assets_dir = os.path.join(os.path.dirname(__file__), "assets")
-            video_icon_path = os.path.join(assets_dir, "video_icon.png")
-
-            if os.path.exists(video_icon_path):
-                try:
-                    video_icon = Image.open(video_icon_path)
-                    if video_icon.mode != 'RGBA':
-                        video_icon = video_icon.convert('RGBA')
-
-                    target_height = int(18 * self.scale)
-                    aspect_ratio = video_icon.width / video_icon.height
-                    target_width = int(target_height * aspect_ratio)
-                    video_icon = video_icon.resize((target_width, target_height), Image.Resampling.LANCZOS)
-
-                    video_x = self.width - target_width - int(16 * self.scale)
-                    video_y = icon_row_y - target_height // 2
-                    img.paste(video_icon, (video_x, video_y), video_icon)
-                except Exception as e:
-                    print(f"Failed to load video icon: {e}")
 
             # Name with chevron
             name_font = get_font(int(13 * self.scale))

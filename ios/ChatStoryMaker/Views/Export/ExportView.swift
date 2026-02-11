@@ -13,6 +13,7 @@ struct ExportView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: ExportViewModel
     @State private var showHistory = false
+    @State private var showExportWarning = false
 
     init(conversation: Conversation) {
         self._viewModel = State(initialValue: ExportViewModel(conversation: conversation))
@@ -25,9 +26,6 @@ struct ExportView: View {
                     VStack(spacing: 24) {
                         // Format picker
                         FormatPickerView(selectedFormat: $viewModel.settings.format)
-
-                        // Export type picker
-                        ExportTypePickerView(selectedType: $viewModel.settings.exportType)
 
                         // Preview area
                         VStack(spacing: 12) {
@@ -62,11 +60,11 @@ struct ExportView: View {
                 if viewModel.isExporting {
                     ExportProgressOverlay(
                         progress: viewModel.exportProgress,
-                        isVideo: viewModel.settings.exportType == .video
+                        isVideo: true
                     )
                 }
             }
-            .navigationTitle(viewModel.settings.exportType == .video ? "Export Video" : "Export Screenshot")
+            .navigationTitle("Export Video")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -106,39 +104,37 @@ struct ExportView: View {
             .fullScreenCover(isPresented: $viewModel.showPaywall) {
                 PaywallView(isLimitTriggered: true)
             }
+            .alert("Reminder", isPresented: $showExportWarning) {
+                Button("Cancel", role: .cancel) {}
+                Button("Export Video") {
+                    viewModel.isExporting = true
+                    viewModel.exportProgress = 0
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        Task {
+                            await viewModel.startExport()
+                        }
+                    }
+                }
+            } message: {
+                Text("This is FICTIONAL content for entertainment. Share responsibly and ethically.")
+            }
         }
     }
 
     private var exportButton: some View {
         Button {
             guard !viewModel.isExporting && !viewModel.conversation.messages.isEmpty else { return }
-            // Set exporting state immediately for instant UI feedback
-            viewModel.isExporting = true
-            viewModel.exportProgress = 0
-
-            // Delay export to let UI render and animations start
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                Task {
-                    await viewModel.startExport()
-                }
-            }
+            showExportWarning = true
         } label: {
             Group {
                 if viewModel.isExporting {
                     HStack(spacing: 12) {
                         ProgressView()
                             .tint(.white)
-                        if viewModel.settings.exportType == .video {
-                            Text("Exporting \(Int(viewModel.exportProgress * 100))%")
-                        } else {
-                            Text("Generating...")
-                        }
+                        Text("Exporting \(Int(viewModel.exportProgress * 100))%")
                     }
                 } else {
-                    Label(
-                        viewModel.settings.exportType == .video ? "Export Video" : "Export Screenshot",
-                        systemImage: viewModel.settings.exportType.icon
-                    )
+                    Label("Export Video", systemImage: "video.fill")
                 }
             }
             .font(.headline)
@@ -149,49 +145,6 @@ struct ExportView: View {
             .cornerRadius(12)
         }
         .disabled(!viewModel.canExport)
-    }
-}
-
-struct ExportTypePickerView: View {
-    @Binding var selectedType: ExportType
-
-    private let coral = Color(red: 224/255, green: 123/255, blue: 94/255)
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("EXPORT TYPE")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(coral)
-
-            HStack(spacing: 12) {
-                ForEach(ExportType.allCases, id: \.self) { type in
-                    let isSelected = selectedType == type
-                    Button(action: {
-                        selectedType = type
-                        HapticManager.selection()
-                    }) {
-                        VStack(spacing: 8) {
-                            Text(type.emoji)
-                                .font(.system(size: 36))
-                            Text(type.displayName)
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(.primary)
-                            Text(type.subtitle)
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 20)
-                        .background(isSelected ? coral.opacity(0.1) : Color(.systemGray6))
-                        .cornerRadius(14)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(isSelected ? coral : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -211,7 +164,7 @@ struct VideoPreviewView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 24)
                 .fill(settings.darkMode ? Color.black : Color.white)
-                .aspectRatio(settings.exportType == .screenshot ? 9/16 : aspectRatio, contentMode: .fit)
+                .aspectRatio(aspectRatio, contentMode: .fit)
                 .overlay(
                     VStack(spacing: 0) {
                         // iMessage-style header
@@ -309,14 +262,7 @@ struct VideoPreviewView: View {
                 .padding(.leading, 12)
                 .padding(.top, 8)
         }
-        .overlay(alignment: .trailing) {
-            // Video icon
-            Image(systemName: "video.fill")
-                .font(.system(size: 14))
-                .foregroundColor(.blue)
-                .padding(.trailing, 12)
-                .padding(.top, 8)
-        }
+        // Video icon removed
     }
 
     @ViewBuilder
@@ -454,60 +400,20 @@ struct ExportSettingsSection: View {
             Text("Settings")
                 .font(.headline)
 
-            if settings.exportType == .video {
-                // Video-specific settings
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Typing Speed")
-                        .font(.subheadline)
-                    Picker("Speed", selection: $settings.typingSpeed) {
-                        ForEach(TypingSpeed.allCases, id: \.self) { speed in
-                            Text(speed.displayName).tag(speed)
-                        }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Typing Speed")
+                    .font(.subheadline)
+                Picker("Speed", selection: $settings.typingSpeed) {
+                    ForEach(TypingSpeed.allCases, id: \.self) { speed in
+                        Text(speed.displayName).tag(speed)
                     }
-                    .pickerStyle(.segmented)
                 }
-
-                Toggle("Show Keyboard", isOn: $settings.showKeyboard)
-                Toggle("Typing Indicator", isOn: $settings.showTypingIndicator)
-                Toggle("Sound Effects", isOn: $settings.enableSounds)
-            } else {
-                // Screenshot-specific settings
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Screenshot Mode")
-                        .font(.subheadline)
-                    HStack(spacing: 12) {
-                        ForEach(ScreenshotMode.allCases, id: \.self) { mode in
-                            Button(action: {
-                                settings.screenshotMode = mode
-                                HapticManager.selection()
-                            }) {
-                                VStack(spacing: 6) {
-                                    Image(systemName: mode.icon)
-                                        .font(.title3)
-                                    Text(mode.displayName)
-                                        .font(.caption)
-                                        .fontWeight(settings.screenshotMode == mode ? .semibold : .regular)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(settings.screenshotMode == mode ? Color.accentColor.opacity(0.1) : Color(.systemGray6))
-                                .foregroundColor(settings.screenshotMode == mode ? .accentColor : .primary)
-                                .cornerRadius(10)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(settings.screenshotMode == mode ? Color.accentColor : Color.clear, lineWidth: 2)
-                                )
-                            }
-                        }
-                    }
-                    Text(settings.screenshotMode.description)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
+                .pickerStyle(.segmented)
             }
 
-            // Common settings
+            Toggle("Show Keyboard", isOn: $settings.showKeyboard)
+            Toggle("Typing Indicator", isOn: $settings.showTypingIndicator)
+            Toggle("Sound Effects", isOn: $settings.enableSounds)
             Toggle("Dark Mode", isOn: $settings.darkMode)
         }
     }
@@ -578,7 +484,7 @@ struct ExportProgressOverlay: View {
                 .animation(.easeOut(duration: 0.2), value: progress)
 
                 // Title
-                Text(isVideo ? "Exporting Video" : "Exporting Screenshot")
+                Text("Exporting Video")
                     .font(.headline)
                     .foregroundColor(.white)
 
@@ -599,9 +505,9 @@ struct ExportProgressOverlay: View {
         if progress < 0.1 {
             return "Preparing..."
         } else if progress < 0.8 {
-            return isVideo ? "Rendering frames..." : "Generating image..."
+            return "Rendering frames..."
         } else if progress < 0.95 {
-            return isVideo ? "Adding audio..." : "Finishing up..."
+            return "Adding audio..."
         } else {
             return "Almost done..."
         }

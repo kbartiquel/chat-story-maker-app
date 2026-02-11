@@ -74,33 +74,16 @@ enum RenderMode: String, CaseIterable {
 
 enum ExportType: String, CaseIterable {
     case video
-    case screenshot
 
     var displayName: String {
         switch self {
         case .video: return "Video"
-        case .screenshot: return "Screenshot"
         }
     }
 
     var icon: String {
         switch self {
         case .video: return "video.fill"
-        case .screenshot: return "camera.fill"
-        }
-    }
-
-    var emoji: String {
-        switch self {
-        case .video: return "🎬"
-        case .screenshot: return "📸"
-        }
-    }
-
-    var subtitle: String {
-        switch self {
-        case .video: return "MP4 with animation"
-        case .screenshot: return "PNG image"
         }
     }
 }

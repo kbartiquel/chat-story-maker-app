@@ -684,10 +684,7 @@ class VideoExportService {
         let nameY = avatarY + avatarSize + 4 * scale
         name.draw(at: CGPoint(x: nameX, y: nameY), withAttributes: nameAttrs)
 
-        // Video icon (right) - only for 1:1 chats, not group chats
-        if !config.isGroupChat {
-            drawVideoIcon(at: CGPoint(x: canvasWidth - 35 * scale, y: headerHeight / 2 - 10 * scale), color: blueColor, context: context, scale: scale)
-        }
+        // Video icon removed for App Store compliance
     }
 
     private func drawHeaderBar(
@@ -984,7 +981,7 @@ class VideoExportService {
             let font = UIFont.systemFont(ofSize: inputFontSize)
             let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: placeholderColor]
             let textY = inputRect.origin.y + (inputFieldHeight - font.lineHeight) / 2
-            "iMessage".draw(at: CGPoint(x: inputRect.origin.x + 12 * scale, y: textY), withAttributes: attrs)
+            "Message".draw(at: CGPoint(x: inputRect.origin.x + 12 * scale, y: textY), withAttributes: attrs)
         }
 
         // Send button

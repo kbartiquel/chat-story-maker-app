@@ -11,11 +11,11 @@ enum ChatTheme: String, CaseIterable {
     case imessage
 
     var displayName: String {
-        return "iMessage"
+        return "Classic"
     }
 
     var senderBubbleColor: Color {
-        Color(hex: "#007AFF")
+        Color(hex: "#E07B5E")
     }
 
     var receiverBubbleColor: Color {

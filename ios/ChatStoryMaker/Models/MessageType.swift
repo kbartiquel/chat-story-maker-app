@@ -27,7 +27,7 @@ enum ReceiptStyle: String, Codable, CaseIterable {
     var displayName: String {
         switch self {
         case .whatsapp: return "WhatsApp"
-        case .imessage: return "iMessage"
+        case .imessage: return "Classic"
         }
     }
 }

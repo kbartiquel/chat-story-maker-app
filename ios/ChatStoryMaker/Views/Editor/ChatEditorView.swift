@@ -33,9 +33,14 @@ struct ChatEditorView: View {
         viewModel.characters.first { !$0.isMe }
     }
 
+    private let coral = Color(red: 224/255, green: 123/255, blue: 94/255)
+
     var body: some View {
         VStack(spacing: 0) {
-            // Custom iMessage-style navigation bar
+            // Story Mode indicator
+            storyModeBar
+
+            // Custom navigation bar
             iMessageNavBar
 
             Divider()
@@ -141,66 +146,94 @@ struct ChatEditorView: View {
         }
     }
 
-    // MARK: - iMessage Navigation Bar
+    // MARK: - Story Mode Bar
+
+    private var storyModeBar: some View {
+        HStack {
+            HStack(spacing: 6) {
+                Image(systemName: "book.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(coral)
+                Text("Story Mode")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(coral)
+            }
+
+            Spacer()
+
+            Text("Editing")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+        .background(Color(.systemBackground))
+        .overlay(alignment: .bottom) {
+            Divider()
+                .background(coral.opacity(0.3))
+        }
+    }
+
+    // MARK: - Navigation Bar
 
     private var iMessageNavBar: some View {
-        ZStack {
-            // Center: Avatar and Name
-            Button {
-                editedTitle = conversation.title
-                showTitleEditor = true
-            } label: {
-                VStack(spacing: 2) {
-                    if conversation.isGroupChat {
-                        // Group chat: stacked avatars
-                        groupAvatarStack
-                    } else {
-                        // 1-on-1: single contact avatar
-                        contactAvatar
-                    }
-
-                    HStack(spacing: 2) {
-                        Text(conversation.isGroupChat ? conversation.title : (mainContact?.name ?? conversation.title))
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-
+        HStack {
             // Left: Back button
-            HStack {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.accentColor)
-                }
-                Spacer()
+            Button(action: { dismiss() }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.accentColor)
             }
+
+            Spacer()
 
             // Right: Actions
-            HStack {
-                Spacer()
-                HStack(spacing: 16) {
-                    Button(action: { isReorderMode.toggle() }) {
-                        Image(systemName: isReorderMode ? "checkmark" : "arrow.up.arrow.down")
-                            .font(.system(size: 18))
-                            .foregroundColor(.accentColor)
-                    }
-                    Button(action: { viewModel.showingExport = true }) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 20))
-                            .foregroundColor(.accentColor)
-                    }
+            HStack(spacing: 16) {
+                Button(action: { isReorderMode.toggle() }) {
+                    Image(systemName: isReorderMode ? "checkmark" : "arrow.up.arrow.down")
+                        .font(.system(size: 18))
+                        .foregroundColor(.accentColor)
+                }
+                Button(action: { viewModel.showingExport = true }) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 20))
+                        .foregroundColor(.accentColor)
                 }
             }
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(Color(.systemBackground))
+    }
+
+    // MARK: - Message List Header (Avatar + Name)
+
+    private var messageListHeader: some View {
+        Button {
+            editedTitle = conversation.title
+            showTitleEditor = true
+        } label: {
+            VStack(spacing: 4) {
+                if conversation.isGroupChat {
+                    groupAvatarStack
+                } else {
+                    contactAvatar
+                }
+
+                HStack(spacing: 2) {
+                    Text(conversation.isGroupChat ? conversation.title : (mainContact?.name ?? conversation.title))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
     }
 
     @ViewBuilder
@@ -265,6 +298,9 @@ struct ChatEditorView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 8) {
+                    // Avatar + Name header
+                    messageListHeader
+
                     ForEach(viewModel.sortedMessages) { message in
                         MessageBubbleView(
                             message: message,

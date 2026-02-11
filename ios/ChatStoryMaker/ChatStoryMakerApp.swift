@@ -52,9 +52,24 @@ struct TexteryApp: App {
         }
     }
 
+    @AppStorage("hasSeenDisclaimer") private var hasSeenDisclaimer = false
+    @State private var showDisclaimer = false
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    if !hasSeenDisclaimer {
+                        showDisclaimer = true
+                    }
+                }
+                .sheet(isPresented: $showDisclaimer) {
+                    DisclaimerView(isPresented: $showDisclaimer)
+                        .interactiveDismissDisabled()
+                        .onDisappear {
+                            hasSeenDisclaimer = true
+                        }
+                }
         }
         .modelContainer(container)
     }
