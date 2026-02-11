@@ -22,6 +22,8 @@ struct ChatEditorView: View {
     @State private var statusMessage: Message?
     @State private var showTitleEditor = false
     @State private var editedTitle = ""
+    @State private var showContactNameEditor = false
+    @State private var editedContactName = ""
 
     init(conversation: Conversation) {
         self.conversation = conversation
@@ -122,12 +124,22 @@ struct ChatEditorView: View {
                 editingMessage = nil
             }
         }
-        .alert("Edit Name", isPresented: $showTitleEditor) {
-            TextField("Name", text: $editedTitle)
+        .alert("Edit Group Name", isPresented: $showTitleEditor) {
+            TextField("Group Name", text: $editedTitle)
             Button("Cancel", role: .cancel) {}
             Button("Save") {
                 if !editedTitle.trimmingCharacters(in: .whitespaces).isEmpty {
                     conversation.title = editedTitle.trimmingCharacters(in: .whitespaces)
+                }
+            }
+        }
+        .alert("Edit Contact Name", isPresented: $showContactNameEditor) {
+            TextField("Name", text: $editedContactName)
+            Button("Cancel", role: .cancel) {}
+            Button("Save") {
+                let newName = editedContactName.trimmingCharacters(in: .whitespaces)
+                if !newName.isEmpty, let contact = mainContact {
+                    contact.name = newName
                 }
             }
         }
@@ -211,8 +223,13 @@ struct ChatEditorView: View {
 
     private var messageListHeader: some View {
         Button {
-            editedTitle = conversation.title
-            showTitleEditor = true
+            if conversation.isGroupChat {
+                editedTitle = conversation.title
+                showTitleEditor = true
+            } else if let contact = mainContact {
+                editedContactName = contact.name
+                showContactNameEditor = true
+            }
         } label: {
             VStack(spacing: 4) {
                 if conversation.isGroupChat {

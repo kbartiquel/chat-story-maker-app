@@ -41,7 +41,7 @@ struct MessageInputView: View {
 
             // Text field with iMessage styling
             HStack(spacing: 8) {
-                TextField("Message", text: $text, axis: .vertical)
+                TextField("Enter text", text: $text, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...5)
 
