@@ -99,20 +99,9 @@ struct MessageBubbleView: View {
                         }
                     }
                     .contextMenu {
-                            Button(action: { onReaction?() }) {
-                                Label("Add Reaction", systemImage: "face.smiling")
-                            }
                             if message.type == .text {
                                 Button(action: { onEdit?() }) {
                                     Label("Edit", systemImage: "pencil")
-                                }
-                            }
-                            Button(action: { onTimestamp?() }) {
-                                Label("Edit Time", systemImage: "clock")
-                            }
-                            if isMe {
-                                Button(action: { onStatus?() }) {
-                                    Label("Delivery Status", systemImage: "checkmark.circle")
                                 }
                             }
                             Button(role: .destructive, action: { onDelete?() }) {
