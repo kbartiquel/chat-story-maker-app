@@ -27,21 +27,6 @@ struct ExportView: View {
                         // Format picker
                         FormatPickerView(selectedFormat: $viewModel.settings.format)
 
-                        // Preview area
-                        VStack(spacing: 12) {
-                            Text("PREVIEW")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.secondary)
-
-                            VideoPreviewView(
-                                conversation: viewModel.conversation,
-                                settings: viewModel.settings
-                            )
-                        }
-                        .padding(16)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(16)
-
                         // Settings
                         ExportSettingsSection(
                             settings: $viewModel.settings,
