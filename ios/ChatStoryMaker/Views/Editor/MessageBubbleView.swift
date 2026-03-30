@@ -68,8 +68,13 @@ struct MessageBubbleView: View {
                 }
             }
 
-            HStack(alignment: .bottom, spacing: 8) {
-                if isMe { Spacer(minLength: 60) }
+            HStack(alignment: .center, spacing: 6) {
+                if isMe {
+                    Spacer(minLength: 40)
+
+                    // Edit/Delete buttons (left of sender bubble)
+                    editButtons
+                }
 
                 // Avatar for receiver (left side) - only in group chats
                 if showAvatar {
@@ -85,7 +90,7 @@ struct MessageBubbleView: View {
                             .padding(.horizontal, 4)
                     }
 
-                    // Message content with overlapping reactions (iMessage style)
+                    // Message content with overlapping reactions
                     ZStack(alignment: isMe ? .topLeading : .topTrailing) {
                         bubbleContent
 
@@ -98,16 +103,6 @@ struct MessageBubbleView: View {
                                 )
                         }
                     }
-                    .contextMenu {
-                            if message.type == .text {
-                                Button(action: { onEdit?() }) {
-                                    Label("Edit", systemImage: "pencil")
-                                }
-                            }
-                            Button(role: .destructive, action: { onDelete?() }) {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
 
                     // Delivery status (only for sender)
                     if isMe && message.status != .none {
@@ -115,7 +110,36 @@ struct MessageBubbleView: View {
                     }
                 }
 
-                if !isMe { Spacer(minLength: 60) }
+                if !isMe {
+                    // Edit/Delete buttons (right of receiver bubble)
+                    editButtons
+
+                    Spacer(minLength: 40)
+                }
+            }
+        }
+    }
+
+    private var editButtons: some View {
+        HStack(spacing: 8) {
+            if message.type == .text {
+                Button(action: { onEdit?() }) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .frame(width: 28, height: 28)
+                        .background(Color(.systemGray5))
+                        .clipShape(Circle())
+                }
+            }
+
+            Button(action: { onDelete?() }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .frame(width: 28, height: 28)
+                    .background(Color(.systemGray5))
+                    .clipShape(Circle())
             }
         }
     }
