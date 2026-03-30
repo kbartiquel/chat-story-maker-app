@@ -8,8 +8,6 @@
 import os
 import uuid
 import asyncio
-import base64
-import io
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
@@ -20,10 +18,9 @@ import cloudinary.uploader
 
 from models import (
     RenderRequest, JobResponse, JobStatus,
-    GenerateStoryRequest, GenerateStoryResponse, AIServiceStatus,
-    ScreenshotRequest, ScreenshotResponse
+    GenerateStoryRequest, GenerateStoryResponse, AIServiceStatus
 )
-from renderer import VideoRenderer, ScreenshotRenderer
+from renderer import VideoRenderer
 from ai_service import generate_chat_story, get_ai_service_status, AIServiceError
 from settings_manager import load_settings, save_settings, reset_settings, get_default_settings
 
@@ -240,62 +237,6 @@ async def download_video(job_id: str):
         )
 
     raise HTTPException(status_code=404, detail="Video file not found")
-
-
-# ===========================================
-# Screenshot Rendering Endpoints
-# ===========================================
-
-@app.post("/render-screenshot", response_model=ScreenshotResponse)
-async def render_screenshot(request: ScreenshotRequest):
-    """
-    Render a chat conversation as a screenshot image.
-
-    Supports two modes:
-    - "long": All messages in one tall image (for scrolling/panning in video edits)
-    - "paginated": Split into multiple screen-sized images
-
-    Returns base64-encoded PNG image(s).
-    """
-    from models import ScreenshotMode
-
-    try:
-        renderer = ScreenshotRenderer(request)
-
-        if request.mode == ScreenshotMode.paginated:
-            # Paginated mode - return multiple images (already HD at 3x scale)
-            images_base64 = renderer.render_paginated_to_base64()
-            screen_height = int(renderer.width * 16 / 9)  # 9:16 aspect ratio
-            return ScreenshotResponse(
-                success=True,
-                images_base64=images_base64,
-                width=renderer.width,
-                height=screen_height,
-                page_count=len(images_base64)
-            )
-        else:
-            # Long mode - return single tall image (already HD at 3x scale)
-            image = renderer.render()
-
-            # Convert to base64
-            buffer = io.BytesIO()
-            image.save(buffer, format="PNG", optimize=True)
-            buffer.seek(0)
-            image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
-
-            return ScreenshotResponse(
-                success=True,
-                image_base64=image_base64,
-                width=image.width,
-                height=image.height,
-                page_count=1
-            )
-
-    except Exception as e:
-        return ScreenshotResponse(
-            success=False,
-            error=str(e)
-        )
 
 
 async def render_video(job_id: str, request: RenderRequest):

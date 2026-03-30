@@ -2,7 +2,7 @@
 //  ExportSettings.swift
 //  Textery
 //
-//  Video and screenshot export settings and formats
+//  Video export settings and formats
 //
 
 import Foundation
@@ -16,41 +16,8 @@ struct ExportSettings {
     var enableSounds: Bool = true
     var darkMode: Bool = false
 
-    // Screenshot-specific settings
-    var showAvatars: Bool = true
-    var showTimestamps: Bool = true
-    var showReactions: Bool = true
-    var imageQuality: ImageQuality = .high
-    var screenshotMode: ScreenshotMode = .long
-
     // Render mode - always use server/cloud for better quality and emoji support
     var renderMode: RenderMode = .server
-}
-
-enum ScreenshotMode: String, CaseIterable {
-    case long = "long"          // All messages in one tall image
-    case paginated = "paginated" // Split into multiple screen-sized images
-
-    var displayName: String {
-        switch self {
-        case .long: return "Long Screenshot"
-        case .paginated: return "Multi-Page"
-        }
-    }
-
-    var description: String {
-        switch self {
-        case .long: return "All messages in one tall image"
-        case .paginated: return "Split into multiple screens"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .long: return "arrow.up.and.down.text.horizontal"
-        case .paginated: return "rectangle.stack"
-        }
-    }
 }
 
 enum RenderMode: String, CaseIterable {
@@ -84,28 +51,6 @@ enum ExportType: String, CaseIterable {
     var icon: String {
         switch self {
         case .video: return "video.fill"
-        }
-    }
-}
-
-enum ImageQuality: String, CaseIterable {
-    case low
-    case medium
-    case high
-
-    var displayName: String {
-        switch self {
-        case .low: return "Low"
-        case .medium: return "Medium"
-        case .high: return "High"
-        }
-    }
-
-    var scale: CGFloat {
-        switch self {
-        case .low: return 1.0
-        case .medium: return 2.0
-        case .high: return 3.0
         }
     }
 }

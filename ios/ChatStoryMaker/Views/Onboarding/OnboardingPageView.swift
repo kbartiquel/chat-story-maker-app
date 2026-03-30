@@ -228,7 +228,7 @@ struct OnboardingPageView: View {
     OnboardingPageView(
         page: OnboardingPage(
             title: "Create Chat Stories",
-            subtitle: "Design fake text conversations that look completely real. Perfect for storytelling and content creation.",
+            subtitle: "Create fictional chat stories for entertainment, storytelling, and short-form video content.",
             iconName: "bubble.left.and.bubble.right.fill",
             gradientColors: [Color(hex: "#667eea"), Color(hex: "#764ba2")],
             accentColor: .white

@@ -2,7 +2,7 @@
 //  ExportViewModel.swift
 //  Textery
 //
-//  ViewModel for export settings and video/image generation
+//  ViewModel for export settings and video generation
 //
 
 import SwiftUI
@@ -16,7 +16,6 @@ class ExportViewModel {
     var isExporting = false
     var exportProgress: Double = 0
     var exportedVideoURL: URL?
-    var exportedImage: UIImage?
     var showShareSheet = false
     var errorMessage: String?
     var showPaywall = false
@@ -47,12 +46,10 @@ class ExportViewModel {
 
     /// Create export history record after successful export
     func createExportHistory(videoURL: URL? = nil, localPath: String? = nil, jobId: String? = nil) -> ExportHistory {
-        // Generate thumbnail from first frame or video
+        // Generate thumbnail from the first video frame.
         var thumbnailData: Data?
         if let url = videoURL ?? exportedVideoURL {
             thumbnailData = generateThumbnail(from: url)
-        } else if let image = exportedImage {
-            thumbnailData = image.jpegData(compressionQuality: 0.5)
         }
 
         return ExportHistory(
@@ -93,8 +90,6 @@ class ExportViewModel {
     var shareItems: [Any] {
         if let url = exportedVideoURL {
             return [url]
-        } else if let image = exportedImage {
-            return [image]
         }
         return []
     }
@@ -202,7 +197,6 @@ class ExportViewModel {
 
             // Back on main actor - update UI
             exportedVideoURL = url
-            exportedImage = nil
             isExporting = false
             showShareSheet = true
             lastExportHistory = createExportHistory(localPath: url.path)
@@ -231,7 +225,6 @@ class ExportViewModel {
             // Back on main actor - update UI
             await MainActor.run {
                 self.exportedVideoURL = url
-                self.exportedImage = nil
                 self.isExporting = false
                 self.showShareSheet = true
                 self.lastExportHistory = self.createExportHistory(videoURL: url, localPath: url.path)

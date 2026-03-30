@@ -15,7 +15,7 @@ struct OnboardingView: View {
     private let pages: [OnboardingPage] = [
         OnboardingPage(
             title: "Create Chat Stories",
-            subtitle: "Design fake text conversations that look completely real. Perfect for storytelling and content creation.",
+            subtitle: "Create fictional chat stories for entertainment, storytelling, and short-form video content.",
             iconName: "bubble.left.and.bubble.right.fill",
             gradientColors: [Color(hex: "#E07B5E"), Color(hex: "#F09E88")],
             accentColor: .white

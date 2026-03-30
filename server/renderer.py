@@ -1355,8 +1355,7 @@ class ScreenshotRenderer:
     RENDER_SCALE = 3
 
     def __init__(self, request):
-        from models import ScreenshotRequest
-        self.request: ScreenshotRequest = request
+        self.request = request
         self.messages = request.messages
         self.characters = {c.id: c for c in request.characters}
         self.theme = THEMES.get(request.theme.value, THEMES["imessage"])
