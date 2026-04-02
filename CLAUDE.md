@@ -125,8 +125,8 @@ Payment is charged to iTunes at purchase confirmation
 Cancel anytime before trial ends to avoid charges
 Subscriptions auto-renew unless turned off before current period ends
 
-Privacy Policy: https://chat-story-maker.onrender.com/privacy
-Terms of Service: https://chat-story-maker.onrender.com/terms
+Privacy Policy: https://textery-api-7uam4panra-uc.a.run.app/privacy
+Terms of Service: https://textery-api-7uam4panra-uc.a.run.app/terms
 ```
 
 ## Architecture
@@ -268,7 +268,7 @@ Update `ServerExportService.baseURL` in iOS to your Mac's IP:
 static var baseURL: String = "http://YOUR_MAC_IP:8000"
 ```
 
-Production URL: `https://chat-story-maker.onrender.com`
+Production URL: `https://textery-api-7uam4panra-uc.a.run.app`
 
 ### AI Generation Request/Response
 

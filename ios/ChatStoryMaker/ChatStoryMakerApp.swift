@@ -22,7 +22,10 @@ struct TexteryApp: App {
 
         // Initialize RevenueCat
         Purchases.logLevel = .error
-        Purchases.configure(withAPIKey: Config.revenueCatAPIKey)
+        Purchases.configure(
+            withAPIKey: Config.revenueCatAPIKey,
+            appUserID: TrackingService.shared.currentUserID
+        )
 
         do {
             let schema = Schema([Conversation.self, Character.self, Message.self, Folder.self, ExportHistory.self])

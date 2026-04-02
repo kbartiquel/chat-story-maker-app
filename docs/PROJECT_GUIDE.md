@@ -39,6 +39,18 @@ The app is positioned as a fictional storytelling tool, not a real messaging sim
 - Pillow + pilmoji
 - ffmpeg
 - OpenAI or Anthropic for AI story generation
+- Google Cloud Run for the live API
+
+### Admin / Hosting
+- Firebase Hosting for the admin frontend
+- Current live admin URL:
+  - `https://textery-6e482.web.app/admin`
+- Current live Hosting root:
+  - `https://textery-6e482.web.app`
+- Dedicated Firebase project:
+  - `textery`
+- Hosted admin talks to the live API at:
+  - `https://textery-api-7uam4panra-uc.a.run.app`
 
 ## Architecture
 
@@ -93,6 +105,8 @@ The app is positioned as a fictional storytelling tool, not a real messaging sim
   - 3 video exports
   - 5 AI generations
 - Premium unlocks unlimited usage
+- Current paywall direction is one Textery custom paywall layout with no version switching exposed in admin
+- RevenueCat now uses the same stable Textery tracking user ID so webhook `app_user_id` matches backend analytics more reliably going forward
 
 ## Design System
 
@@ -116,6 +130,7 @@ The app is positioned as a fictional storytelling tool, not a real messaging sim
 
 ### Durable Project Notes
 - [PROJECT_MEMORY.md](/Users/kbartiquel/Documents/PROJECTS/ChatStoryMaker/docs/PROJECT_MEMORY.md)
+- [hosting/README.md](/Users/kbartiquel/Documents/PROJECTS/ChatStoryMaker/hosting/README.md)
 
 ### App Review / Planning
 - [appstore-rejection-reply.md](/Users/kbartiquel/Documents/PROJECTS/ChatStoryMaker/appstore-rejection-reply.md)
@@ -133,17 +148,23 @@ The app is positioned as a fictional storytelling tool, not a real messaging sim
 - Video export working with server rendering
 - App Store compliance work started and tightened
 - Screenshot export removed from current app/server flow
+- Firebase Hosting admin deployed
+- Lightweight admin analytics dashboard added
+- Hosted admin moved onto the dedicated `textery` Firebase project
+- Cloud Run API moved onto the user's own Google Cloud project
 
 ### Current Phase
 - App Store submission hardening
 - documentation cleanup
 - final product polish
+- admin/dashboard infrastructure upgrade
 
 ### Current Priorities
 1. Final App Store submission prep
-2. App icon and screenshots
-3. End-to-end testing
-4. Xcode/project naming cleanup from `ChatStoryMaker` to `Textery`
+2. Firestore migration for admin analytics durability
+3. App icon and screenshots
+4. End-to-end testing
+5. Xcode/project naming cleanup from `ChatStoryMaker` to `Textery`
 
 ## App Store Review Context
 
@@ -170,6 +191,11 @@ The app is positioned as a fictional storytelling tool, not a real messaging sim
 - Some older project docs still describe screenshot export and older positioning.
 - Use the current codebase and `docs/PROJECT_MEMORY.md` as the source of truth for current submission posture.
 - If older docs conflict with current app behavior, update the docs before using them for store copy or planning.
+- The live app API currently points to Cloud Run while the admin frontend is hosted separately on Firebase Hosting.
+- Admin analytics are currently stored in a server-side JSON file, not Firestore yet.
+- Admin now follows the richer Quiz Maker / SocMedAI direction with date filters, funnels, user filters, timelines, and RevenueCat-backed revenue visibility.
+- Cost settings and cost reporting were intentionally removed from the admin/dashboard direction.
+- Extra custom paywall/version toggles were removed from server settings and admin because Textery only ships one paywall.
 
 ## Suggested Docs Convention
 

@@ -146,3 +146,11 @@ class AIServiceStatus(BaseModel):
     anthropic_configured: bool
     openai_model: str
     anthropic_model: str
+
+
+class TrackingEventRequest(BaseModel):
+    user_id: str
+    event: str
+    properties: dict = {}
+    platform: str = "ios"
+    app_version: Optional[str] = None

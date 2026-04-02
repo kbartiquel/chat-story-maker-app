@@ -72,7 +72,7 @@
 - `com.kimbytes.chatstorymaker`
 
 ### Server
-- Production: `https://chat-story-maker.onrender.com`
+- Production: `https://textery-api-7uam4panra-uc.a.run.app`
 - Tier: Standard ($25/month, 2GB RAM)
 - Queue: Max 2 concurrent renders
 - Local: `cd server && uvicorn main:app --host 0.0.0.0 --port 8000 --reload`

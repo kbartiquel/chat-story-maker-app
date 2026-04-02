@@ -17,41 +17,47 @@ final class AnalyticsService {
     /// Initialize Aptabase with app key
     func initialize() {
         Aptabase.shared.initialize(appKey: "A-US-7778178477")
+        TrackingService.shared.trackFirstInstallIfNeeded()
+    }
+
+    private func track(_ event: String, properties: [String: String] = [:]) {
+        Aptabase.shared.trackEvent(event, with: properties)
+        TrackingService.shared.track(event: event, properties: properties)
     }
 
     // MARK: - App Events
 
     func trackAppLaunch() {
-        Aptabase.shared.trackEvent("app_launch")
+        track("app_launch")
     }
 
     // MARK: - Conversation Events
 
     func trackConversationCreated(isGroupChat: Bool, characterCount: Int) {
-        Aptabase.shared.trackEvent("conversation_created", with: [
+        track("conversation_created", properties: [
             "is_group_chat": String(isGroupChat),
             "character_count": String(characterCount)
         ])
     }
 
     func trackConversationDeleted() {
-        Aptabase.shared.trackEvent("conversation_deleted")
+        track("conversation_deleted")
     }
 
     func trackConversationDuplicated() {
-        Aptabase.shared.trackEvent("conversation_duplicated")
+        track("conversation_duplicated")
     }
 
     // MARK: - Message Events
 
     func trackMessageAdded(type: String) {
-        Aptabase.shared.trackEvent("message_added", with: [
+        track("message_added", properties: [
             "type": type
         ])
     }
 
     func trackReactionAdded(reaction: String) {
-        Aptabase.shared.trackEvent("reaction_added", with: [
+        track("reaction_added", properties: [
             "reaction": reaction
         ])
     }
@@ -59,7 +65,7 @@ final class AnalyticsService {
     // MARK: - Export Events
 
     func trackExportStarted(format: String, aspectRatio: String, isDarkMode: Bool) {
-        Aptabase.shared.trackEvent("export_started", with: [
+        track("export_started", properties: [
             "format": format,
             "aspect_ratio": aspectRatio,
             "dark_mode": String(isDarkMode)
@@ -67,27 +73,27 @@ final class AnalyticsService {
     }
 
     func trackExportCompleted(format: String, durationSeconds: Double) {
-        Aptabase.shared.trackEvent("export_completed", with: [
+        track("export_completed", properties: [
             "format": format,
             "duration_seconds": String(format: "%.1f", durationSeconds)
         ])
     }
 
     func trackExportFailed(format: String, error: String) {
-        Aptabase.shared.trackEvent("export_failed", with: [
+        track("export_failed", properties: [
             "format": format,
             "error": error
         ])
     }
 
     func trackExportShared() {
-        Aptabase.shared.trackEvent("export_shared")
+        track("export_shared")
     }
 
     // MARK: - AI Generation Events
 
     func trackAIGenerationStarted(genre: String, mood: String, length: String, characterCount: Int) {
-        Aptabase.shared.trackEvent("ai_generation_started", with: [
+        track("ai_generation_started", properties: [
             "genre": genre,
             "mood": mood,
             "length": length,
@@ -96,13 +102,13 @@ final class AnalyticsService {
     }
 
     func trackAIGenerationCompleted(messageCount: Int) {
-        Aptabase.shared.trackEvent("ai_generation_completed", with: [
+        track("ai_generation_completed", properties: [
             "message_count": String(messageCount)
         ])
     }
 
     func trackAIGenerationFailed(error: String) {
-        Aptabase.shared.trackEvent("ai_generation_failed", with: [
+        track("ai_generation_failed", properties: [
             "error": error
         ])
     }
@@ -110,17 +116,17 @@ final class AnalyticsService {
     // MARK: - Folder Events
 
     func trackFolderCreated() {
-        Aptabase.shared.trackEvent("folder_created")
+        track("folder_created")
     }
 
     func trackFolderDeleted() {
-        Aptabase.shared.trackEvent("folder_deleted")
+        track("folder_deleted")
     }
 
     // MARK: - Navigation Events
 
     func trackTabSelected(tab: String) {
-        Aptabase.shared.trackEvent("tab_selected", with: [
+        track("tab_selected", properties: [
             "tab": tab
         ])
     }
@@ -128,17 +134,17 @@ final class AnalyticsService {
     // MARK: - Onboarding Events
 
     func trackOnboardingStarted() {
-        Aptabase.shared.trackEvent("onboarding_started")
+        track("onboarding_started")
     }
 
     func trackOnboardingCompleted(skipped: Bool = false) {
-        Aptabase.shared.trackEvent("onboarding_completed", with: [
+        track("onboarding_completed", properties: [
             "skipped": String(skipped)
         ])
     }
 
     func trackOnboardingPageViewed(page: Int) {
-        Aptabase.shared.trackEvent("onboarding_page_viewed", with: [
+        track("onboarding_page_viewed", properties: [
             "page": String(page)
         ])
     }
@@ -146,30 +152,30 @@ final class AnalyticsService {
     // MARK: - Paywall Events
 
     func trackPaywallShown(source: String) {
-        Aptabase.shared.trackEvent("paywall_shown", with: [
+        track("paywall_shown", properties: [
             "source": source
         ])
     }
 
     func trackPaywallDismissed() {
-        Aptabase.shared.trackEvent("paywall_dismissed")
+        track("paywall_dismissed")
     }
 
     func trackPurchaseCompleted(plan: String) {
-        Aptabase.shared.trackEvent("purchase_completed", with: [
+        track("purchase_completed", properties: [
             "plan": plan
         ])
     }
 
     func trackPurchaseFailed(plan: String, error: String) {
-        Aptabase.shared.trackEvent("purchase_failed", with: [
+        track("purchase_failed", properties: [
             "plan": plan,
             "error": error
         ])
     }
 
     func trackRestorePurchases(success: Bool) {
-        Aptabase.shared.trackEvent("restore_purchases", with: [
+        track("restore_purchases", properties: [
             "success": String(success)
         ])
     }

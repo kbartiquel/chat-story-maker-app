@@ -487,6 +487,7 @@
             'hardPaywall',
             'paywallCloseButtonDelay',
             'paywallCloseButtonDelayOnLimit',
+            'paywallShowLoadingIndicator',
             'showPaywallOnStart',
             'paywallMonthly',
             'paywallWeekly',
@@ -535,7 +536,11 @@
         // Load settings
         async function loadSettings() {
             try {
-                const response = await fetch('/admin/settings');
+                const response = await fetch('/admin/settings', {
+                    headers: {
+                        'Authorization': authToken
+                    }
+                });
                 currentSettings = await response.json();
                 renderSettings();
                 updateJsonView();

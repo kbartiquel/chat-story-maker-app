@@ -6,13 +6,16 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
     @State private var soundsEnabled = AudioService.shared.soundsEnabled
     @State private var showOnboarding = false
     @State private var showPaywall = false
     @State private var isPremium = SubscriptionService.shared.hasPremiumAccessCached()
+    @State private var screenshotSeedMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -108,6 +111,15 @@ struct SettingsView: View {
                 // Debug section (for testing)
                 #if DEBUG
                 Section {
+                    Button("Load Screenshot Mock Data") {
+                        do {
+                            try ScreenshotMockDataService.shared.seedAppStoreMockData(in: modelContext)
+                            screenshotSeedMessage = "App Store mock conversations loaded."
+                        } catch {
+                            screenshotSeedMessage = "Failed to load mock data: \(error.localizedDescription)"
+                        }
+                    }
+
                     Button("Reset Usage Limits") {
                         LimitTrackingService.shared.resetAllCounts()
                     }
@@ -131,6 +143,14 @@ struct SettingsView: View {
             }
             .fullScreenCover(isPresented: $showPaywall) {
                 PaywallView(showCloseButtonImmediately: true)
+            }
+            .alert("Screenshot Mock Data", isPresented: Binding(
+                get: { screenshotSeedMessage != nil },
+                set: { if !$0 { screenshotSeedMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(screenshotSeedMessage ?? "")
             }
             .onChange(of: showPaywall) { _, _ in
                 isPremium = SubscriptionService.shared.hasPremiumAccessCached()

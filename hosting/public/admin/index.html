@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Textery Admin</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/favicon.png">
+  <link rel="stylesheet" href="/admin/styles.css">
+</head>
+<body>
+  <div class="login-shell" id="loginShell">
+    <div class="login-card">
+      <div class="brand-mark">Textery</div>
+      <h1>Admin Panel</h1>
+      <p>Dashboard, webhook revenue reporting, user journeys, and paywall settings in one hosted admin.</p>
+      <div class="alert alert-error" id="loginError"></div>
+      <input type="password" id="passwordInput" placeholder="Enter admin password">
+      <button class="btn-primary" id="loginBtn">Login</button>
+      <div class="login-meta">
+        <span>Firebase Hosting frontend</span>
+        <span>Cloud Run backend</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-shell hidden" id="appShell">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-brand">Textery Admin</div>
+        <div class="topbar-sub">Revenue, funnels, user journeys, and paywall control</div>
+      </div>
+      <div class="topbar-right">
+        <span class="api-pill" id="apiStatus">Checking API…</span>
+        <button class="btn-icon" id="copyApiBtn">Copy API</button>
+        <button class="btn-icon" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="settings">Settings</button>
+    </div>
+
+    <div class="content">
+      <section class="tab-panel" id="dashboardTab">
+        <div class="summary-row" id="summaryRow"></div>
+
+        <div class="month-row">
+          <div class="filter-pills" id="datePills"></div>
+          <div class="api-meta">
+            <span id="apiBase"></span>
+          </div>
+        </div>
+
+        <div class="breakdown-row" id="endpointBreakdown"></div>
+
+        <div class="analytics-row">
+          <div class="analytics-panel">
+            <div class="analytics-panel-title">Feature Usage</div>
+            <div class="bar-list" id="featureBars"></div>
+          </div>
+          <div class="analytics-panel">
+            <div class="analytics-panel-title">Event Breakdown</div>
+            <div class="bar-list" id="eventBars"></div>
+          </div>
+        </div>
+
+        <div class="funnel-row">
+          <div class="funnel-label">Funnels</div>
+          <div id="funnelButtons"></div>
+        </div>
+
+        <div class="user-filters">
+          <div class="user-filters-row">
+            <div class="user-filters-label">Status</div>
+            <div class="user-filters-pills" id="statusFilters"></div>
+          </div>
+          <div class="user-filters-row">
+            <div class="user-filters-label">Plan</div>
+            <div class="user-filters-pills" id="planFilters"></div>
+          </div>
+          <div class="user-filters-row">
+            <div class="user-filters-label">Country</div>
+            <div class="user-filters-pills" id="countryFilters"></div>
+          </div>
+          <div class="user-filters-row">
+            <div class="user-filters-label">Journey</div>
+            <div class="user-filters-pills" id="journeyFilters"></div>
+          </div>
+          <div class="user-filters-row">
+            <div class="user-filters-label">Feature</div>
+            <div class="user-filters-pills" id="featureFilters"></div>
+          </div>
+          <button class="uf-clear" id="clearFiltersBtn">Clear Filters</button>
+        </div>
+
+        <div class="filtered-count" id="filteredCount"></div>
+
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Last Seen</th>
+              <th>Last Event</th>
+              <th>Status</th>
+              <th>Plan</th>
+              <th>Revenue</th>
+              <th>Events</th>
+              <th>Purchases</th>
+              <th>Country</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </section>
+
+      <section class="tab-panel hidden" id="settingsTab">
+        <div id="settingsAlert"></div>
+        <div class="settings-grid">
+          <div class="section-card">
+            <h2>Paywall Behavior</h2>
+            <div id="behaviorSettings"></div>
+          </div>
+          <div class="section-card">
+            <h2>Plan Visibility</h2>
+            <div class="plan-preview" id="planPreview"></div>
+            <div id="planSettings"></div>
+          </div>
+          <div class="section-card">
+            <h2>Free Tier Limits</h2>
+            <div id="limitSettings"></div>
+          </div>
+          <div class="section-card">
+            <h2>Raw JSON</h2>
+            <textarea id="jsonEditor" class="json-editor" spellcheck="false"></textarea>
+            <div class="json-actions">
+              <button class="btn-icon" id="formatJsonBtn">Format</button>
+            </div>
+          </div>
+        </div>
+        <div class="action-row">
+          <button class="btn-secondary" id="resetBtn">Reset Defaults</button>
+          <button class="btn-primary" id="saveBtn">Save Settings</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="/admin/app.js"></script>
+</body>
+</html>

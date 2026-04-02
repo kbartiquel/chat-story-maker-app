@@ -165,6 +165,8 @@ class AIService {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue(TrackingService.shared.currentUserID, forHTTPHeaderField: "X-User-ID")
+        urlRequest.setValue(TrackingService.shared.currentAppVersion, forHTTPHeaderField: "X-App-Version")
         urlRequest.timeoutInterval = 60 // AI generation can take time
 
         let encoder = JSONEncoder()

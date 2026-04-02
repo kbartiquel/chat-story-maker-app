@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Textery iPad - Screen 1</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1 class="page-title">iPad Screen 1 - Create Story Videos Fast</h1>
+  <div class="screenshots-row">
+    <div class="screenshot-col">
+      <h3>iPad 12.9"</h3>
+      <div class="ipad-wrapper">
+        <div class="screenshot screenshot-ipad theme-home" id="screenshot-ipad">
+          <div class="noise"></div>
+          <div class="shape shape-one"></div>
+          <div class="shape shape-two"></div>
+          <div class="headline-ipad">
+            <div class="eyebrow">Create Faster</div>
+            <h2>Create Story<br>Videos Fast</h2>
+            <p>Turn one simple idea into a fictional scene ready to post.</p>
+          </div>
+          <div class="device-card-ipad">
+            <img class="device-shot-ipad" src="assets/source/ipad-screen0-generate.png" alt="Textery iPad generate screen">
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button onclick="download()">Download iPad PNG</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    async function download() {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      try {
+        const resp = await fetch('/api/screenshot?file=ipad-screen0-generate.html&selector=%23screenshot-ipad&width=2048&height=2732');
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'textery-ipad-screen1-generate.png';
+        a.click();
+        URL.revokeObjectURL(url);
+        btn.textContent = 'Done!';
+      } catch {
+        btn.textContent = 'Download iPad PNG';
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "hosting": [
+    {
+      "target": "textery",
+      "public": "hosting/public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "cleanUrls": true,
+      "rewrites": [
+        {
+          "source": "/admin/**",
+          "destination": "/admin/index.html"
+        },
+        {
+          "source": "/",
+          "destination": "/admin/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(js|css|html)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

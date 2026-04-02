@@ -8,7 +8,7 @@
 import os
 import uuid
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,11 +18,21 @@ import cloudinary.uploader
 
 from models import (
     RenderRequest, JobResponse, JobStatus,
-    GenerateStoryRequest, GenerateStoryResponse, AIServiceStatus
+    GenerateStoryRequest, GenerateStoryResponse, AIServiceStatus,
+    TrackingEventRequest
 )
 from renderer import VideoRenderer
 from ai_service import generate_chat_story, get_ai_service_status, AIServiceError
 from settings_manager import load_settings, save_settings, reset_settings, get_default_settings
+from tracking_manager import (
+    record_event,
+    record_request,
+    record_revenuecat_webhook,
+    get_dashboard_summary,
+    get_users,
+    get_admin_stats,
+    delete_user,
+)
 
 # Initialize FastAPI
 app = FastAPI(
@@ -127,6 +137,36 @@ async def queue_status():
     }
 
 
+@app.post("/track")
+async def track_event(request: TrackingEventRequest, http_request: Request):
+    """Receive lightweight analytics events for admin dashboard visibility."""
+    try:
+        event = record_event(
+            user_id=request.user_id,
+            event=request.event,
+            properties=request.properties,
+            platform=request.platform,
+            app_version=request.app_version,
+            country=http_request.headers.get("cf-ipcountry"),
+        )
+        return {"success": True, "event": event}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Tracking failed: {str(e)}")
+
+
+@app.post("/webhooks/revenuecat")
+@app.post("/revenuecat/webhook")
+async def revenuecat_webhook(http_request: Request):
+    """Process RevenueCat webhook events for revenue reporting."""
+    try:
+        payload = await http_request.json()
+        return record_revenuecat_webhook(payload)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Webhook failed: {str(e)}")
+
+
 # ===========================================
 # AI Story Generation Endpoints
 # ===========================================
@@ -138,7 +178,7 @@ async def ai_status():
 
 
 @app.post("/generate", response_model=GenerateStoryResponse)
-async def generate_story(request: GenerateStoryRequest):
+async def generate_story(request: GenerateStoryRequest, http_request: Request):
     """
     Generate a chat story conversation using AI.
 
@@ -154,12 +194,26 @@ async def generate_story(request: GenerateStoryRequest):
             character_names=request.character_names
         )
 
-        return GenerateStoryResponse(
+        response = GenerateStoryResponse(
             title=result["title"],
             group_name=result.get("group_name"),
             characters=result["characters"],
             messages=result["messages"]
         )
+        user_id = http_request.headers.get("X-User-ID")
+        if user_id:
+            record_request(
+                user_id=user_id,
+                endpoint="generate",
+                properties={
+                    "message_count": len(result["messages"]),
+                    "genre": request.genre,
+                    "mood": request.mood,
+                },
+                country=http_request.headers.get("cf-ipcountry"),
+                app_version=http_request.headers.get("X-App-Version"),
+            )
+        return response
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except AIServiceError as e:
@@ -173,7 +227,7 @@ async def generate_story(request: GenerateStoryRequest):
 # ===========================================
 
 @app.post("/render", response_model=JobResponse)
-async def start_render(request: RenderRequest, background_tasks: BackgroundTasks):
+async def start_render(request: RenderRequest, background_tasks: BackgroundTasks, http_request: Request):
     """
     Start a video rendering job.
     Returns immediately with a job_id for polling.
@@ -188,7 +242,10 @@ async def start_render(request: RenderRequest, background_tasks: BackgroundTasks
         "local_path": None,
         "error": None,
         "created_at": datetime.now(),
-        "request": request
+        "request": request,
+        "user_id": http_request.headers.get("X-User-ID"),
+        "app_version": http_request.headers.get("X-App-Version"),
+        "country": http_request.headers.get("cf-ipcountry"),
     }
 
     # Start rendering in background
@@ -306,6 +363,18 @@ async def render_video(job_id: str, request: RenderRequest):
 
             jobs[job_id]["status"] = JobStatus.completed
             jobs[job_id]["progress"] = 1.0
+            if jobs[job_id].get("user_id"):
+                record_request(
+                    user_id=jobs[job_id]["user_id"],
+                    endpoint="render",
+                    properties={
+                        "format": request.settings.format.value,
+                        "export_type": request.settings.export_type.value,
+                        "is_group_chat": request.is_group_chat,
+                    },
+                    app_version=jobs[job_id].get("app_version"),
+                    country=jobs[job_id].get("country"),
+                )
             print(f"[RENDER] Job {job_id} completed successfully", flush=True)
 
         except Exception as e:
@@ -333,6 +402,16 @@ def check_admin_password(password: str) -> bool:
     """Check if the provided password matches the admin password."""
     admin_password = os.getenv("ADMIN_PASSWORD")
     return admin_password and password == admin_password
+
+
+def require_admin_password(request: Request) -> None:
+    """Require a valid admin password in Authorization header."""
+    password = request.headers.get("Authorization", "")
+    if not check_admin_password(password):
+        raise HTTPException(
+            status_code=401,
+            detail={"success": False, "message": "Unauthorized"}
+        )
 
 
 @app.get("/settings")
@@ -371,21 +450,51 @@ async def admin_auth(request: Request):
 
 
 @app.get("/admin/settings")
-async def get_admin_settings():
+async def get_admin_settings(request: Request):
     """Get current settings for admin panel."""
+    require_admin_password(request)
     return load_settings()
+
+
+@app.get("/admin/dashboard")
+async def get_admin_dashboard(request: Request):
+    """Get summary analytics for the admin dashboard."""
+    require_admin_password(request)
+    return get_dashboard_summary()
+
+
+@app.get("/admin/stats")
+async def get_admin_stats_endpoint(
+    request: Request,
+    limit: int = 200,
+    startDate: Optional[str] = None,
+    endDate: Optional[str] = None,
+):
+    """Get detailed dashboard stats with optional date filters."""
+    require_admin_password(request)
+    start = datetime.fromisoformat(startDate).replace(tzinfo=timezone.utc) if startDate else None
+    end = datetime.fromisoformat(endDate).replace(tzinfo=timezone.utc) if endDate else None
+    return get_admin_stats(start_date=start, end_date=end, limit=limit)
+
+
+@app.get("/admin/users")
+async def get_admin_users(request: Request, limit: int = 100):
+    """Get recent users for the admin dashboard."""
+    require_admin_password(request)
+    return {"users": get_users(limit=max(1, min(limit, 250)))}
+
+
+@app.delete("/admin/user/{user_id}")
+async def delete_admin_user(user_id: str, request: Request):
+    """Delete a user and their analytics records."""
+    require_admin_password(request)
+    return delete_user(user_id)
 
 
 @app.post("/admin/settings")
 async def update_admin_settings(request: Request):
     """Update settings (requires admin password in Authorization header)."""
-    password = request.headers.get("Authorization", "")
-
-    if not check_admin_password(password):
-        raise HTTPException(
-            status_code=401,
-            detail={"success": False, "message": "Unauthorized"}
-        )
+    require_admin_password(request)
 
     try:
         new_settings = await request.json()
@@ -401,13 +510,7 @@ async def update_admin_settings(request: Request):
 @app.post("/admin/settings/reset")
 async def reset_admin_settings(request: Request):
     """Reset settings to defaults (requires admin password)."""
-    password = request.headers.get("Authorization", "")
-
-    if not check_admin_password(password):
-        raise HTTPException(
-            status_code=401,
-            detail={"success": False, "message": "Unauthorized"}
-        )
+    require_admin_password(request)
 
     try:
         default_settings = reset_settings()

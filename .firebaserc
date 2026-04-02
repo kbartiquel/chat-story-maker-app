@@ -1,0 +1,27 @@
+{
+  "projects": {},
+  "targets": {
+    "kimbytes-site": {
+      "hosting": {
+        "textery": [
+          "textery"
+        ]
+      }
+    },
+    "kimbytesapps": {
+      "hosting": {
+        "textery": [
+          "textery-admin"
+        ]
+      }
+    },
+    "textery": {
+      "hosting": {
+        "textery": [
+          "textery-6e482"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

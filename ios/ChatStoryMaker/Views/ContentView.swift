@@ -41,10 +41,12 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            let settings = PaywallSettingsService.shared.getSettings()
+
             if !hasCompletedOnboarding {
                 // New user: show onboarding first, then paywall
                 showOnboarding = true
-            } else if !SubscriptionService.shared.hasPremiumAccessCached() {
+            } else if settings.showPaywallOnStart && !SubscriptionService.shared.hasPremiumAccessCached() {
                 // Returning user without premium: show paywall
                 showPaywall = true
             }
@@ -52,8 +54,9 @@ struct ContentView: View {
         .onChange(of: showOnboarding) { _, newValue in
             if !newValue {
                 hasCompletedOnboarding = true
+                let settings = PaywallSettingsService.shared.getSettings()
                 // Show paywall after onboarding completes (if not premium)
-                if !SubscriptionService.shared.hasPremiumAccessCached() {
+                if settings.showPaywallOnStart && !SubscriptionService.shared.hasPremiumAccessCached() {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         showPaywall = true
                     }

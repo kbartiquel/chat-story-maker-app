@@ -17,6 +17,7 @@ struct PaywallSettings: Codable {
     let hardPaywall: Bool
     let paywallCloseButtonDelay: Int
     let paywallCloseButtonDelayOnLimit: Int
+    let paywallShowLoadingIndicator: Bool
     let showPaywallOnStart: Bool
 
     // Plan visibility
@@ -31,6 +32,7 @@ struct PaywallSettings: Codable {
         case hardPaywall
         case paywallCloseButtonDelay
         case paywallCloseButtonDelayOnLimit
+        case paywallShowLoadingIndicator
         case showPaywallOnStart
         case paywallMonthly
         case paywallWeekly
@@ -177,11 +179,12 @@ final class PaywallSettingsService {
             hardPaywall: false,
             paywallCloseButtonDelay: 3,
             paywallCloseButtonDelayOnLimit: 5,
+            paywallShowLoadingIndicator: true,
             showPaywallOnStart: true,
-            paywallMonthly: true,
+            paywallMonthly: false,
             paywallWeekly: true,
-            paywallYearly: false,
-            paywallLifetime: true
+            paywallYearly: true,
+            paywallLifetime: false
         )
     }
 }

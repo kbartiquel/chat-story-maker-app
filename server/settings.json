@@ -4,6 +4,7 @@
   "hardPaywall": false,
   "paywallCloseButtonDelay": 3,
   "paywallCloseButtonDelayOnLimit": 5,
+  "paywallShowLoadingIndicator": true,
   "showPaywallOnStart": true,
   "paywallMonthly": false,
   "paywallWeekly": true,

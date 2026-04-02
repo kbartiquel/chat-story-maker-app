@@ -2,7 +2,7 @@
 //  PaywallView.swift
 //  Textery
 //
-//  Dynamic paywall with intro offer support
+//  Quiz Maker AI custom paywall v3 style adapted for Textery
 //
 
 import SwiftUI
@@ -28,58 +28,27 @@ struct PaywallView: View {
             if viewModel.isLoading {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#E07B5E")))
-            } else if viewModel.offering != nil {
+            } else {
                 paywallContent
             }
 
-            // Close button
-            if !viewModel.isLoading {
-                VStack {
-                    HStack {
-                        Spacer()
-                        if viewModel.canClose {
-                            Button(action: { dismiss() }) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.gray)
-                                    .frame(width: 32, height: 32)
-                            }
-                            .padding()
-                        } else {
-                            // Countdown timer circle
-                            ZStack {
-                                Circle()
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 2)
-                                    .frame(width: 32, height: 32)
-
-                                Circle()
-                                    .trim(from: 0, to: viewModel.progress)
-                                    .stroke(Color.gray, lineWidth: 2)
-                                    .frame(width: 32, height: 32)
-                                    .rotationEffect(.degrees(-90))
-                            }
-                            .padding()
-                        }
-                    }
-                    Spacer()
-                }
-            }
-
-            // Loading overlay during purchase
             if viewModel.isPurchasing {
-                Color.black.opacity(0.5)
-                    .ignoresSafeArea()
+                Color.black.opacity(0.3).ignoresSafeArea()
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#E07B5E")))
             }
         }
         .onAppear {
             let settings = PaywallSettingsService.shared.getSettings()
             let delay = showCloseButtonImmediately ? 0 : (isLimitTriggered ? settings.paywallCloseButtonDelayOnLimit : settings.paywallCloseButtonDelay)
-            viewModel.loadOffering(closeDelay: delay)
-
-            // Track paywall shown
             let source = showCloseButtonImmediately ? "settings" : (isLimitTriggered ? "limit_reached" : "app_launch")
+
+            viewModel.loadOffering(
+                closeDelay: delay,
+                showLoadingIndicator: settings.paywallShowLoadingIndicator,
+                source: source
+            )
+
             AnalyticsService.shared.trackPaywallShown(source: source)
         }
         .alert("Error", isPresented: $viewModel.showError) {
@@ -90,228 +59,312 @@ struct PaywallView: View {
     }
 
     private var paywallContent: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // App Icon with animation
-                    Image("AppIconImage")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 100, height: 100)
-                        .clipShape(RoundedRectangle(cornerRadius: 22))
-                        .rotationEffect(.degrees(viewModel.iconRotation))
-                        .padding(.top, 50)
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                topBar
+                    .padding(.horizontal, 24)
+                    .padding(.top, 4)
+                    .padding(.bottom, 14)
 
-                    // Title
-                    Text("Unlock Premium")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.black)
-
-                    // Features List
-                    VStack(spacing: 10) {
-                        featureRow(icon: "infinity", text: "Unlimited Video Exports")
-                        featureRow(icon: "sparkles", text: "Unlimited AI Story Generation")
-                        featureRow(icon: "paintbrush.fill", text: "All Export Formats")
-                        featureRow(icon: "star.fill", text: "Priority Support")
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        heroSection
+                            .frame(maxWidth: .infinity, alignment: .top)
                     }
-                    .padding(.vertical, 16)
+                    .padding(.horizontal, 24)
+                    .frame(minHeight: max(0, geometry.size.height - 250), alignment: .top)
                 }
-                .padding(.horizontal, 20)
+
+                bottomSection
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+                    .background(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.0),
+                                Color.white.opacity(0.92),
+                                Color.white
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea(edges: .bottom)
+                    )
+            }
+        }
+    }
+
+    private var topBar: some View {
+        HStack {
+            SizedBox(width: 80) {
+                if !viewModel.hardPaywall {
+                    if viewModel.canClose {
+                        Button(action: {
+                            AnalyticsService.shared.trackPaywallDismissed()
+                            dismiss()
+                        }) {
+                            if viewModel.totalSeconds == 0 {
+                                Text("Close")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.black.opacity(0.4))
+                            } else {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.black.opacity(0.4))
+                                    .frame(width: 32, height: 32)
+                            }
+                        }
+                    } else if viewModel.showLoadingIndicator {
+                        ZStack {
+                            Circle()
+                                .stroke(Color.black.opacity(0.08), lineWidth: 2)
+                            Circle()
+                                .trim(from: 0, to: viewModel.progress)
+                                .stroke(Color.black.opacity(0.3), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                .rotationEffect(.degrees(-90))
+                        }
+                        .frame(width: 26, height: 26)
+                    }
+                }
             }
 
-            // Bottom Section with Plans
-            VStack(spacing: 12) {
-                // Plan order: Yearly → Monthly → Weekly
-                if let plan = viewModel.yearlyPlanInfo {
-                    planOptionView(plan: plan, planId: "yearly")
-                }
+            Spacer()
 
-                if let plan = viewModel.monthlyPlanInfo {
-                    planOptionView(plan: plan, planId: "monthly")
-                }
+            HStack(spacing: 8) {
+                Image("AppIconImage")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .scaleEffect(viewModel.iconPulse)
+                    .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: viewModel.iconPulse)
 
-                if let plan = viewModel.weeklyPlanInfo {
-                    planOptionView(plan: plan, planId: "weekly")
-                }
+                Text("Textery")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.black.opacity(0.88))
+            }
 
-                // Purchase Button
-                Button(action: { viewModel.handlePurchase(onSuccess: { dismiss() }) }) {
-                    Text(viewModel.buttonText)
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color(hex: "#1A9E6D"))
-                        .cornerRadius(12)
-                }
-                .disabled(viewModel.isPurchasing)
+            Spacer()
 
-                // Footer Links
-                HStack(spacing: 4) {
+            SizedBox(width: 80) {
+                Button(action: {
+                    viewModel.restorePurchases(onSuccess: { dismiss() })
+                }) {
                     if viewModel.isRestoring {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .gray))
-                            .scaleEffect(0.7)
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#E07B5E")))
+                            .scaleEffect(0.8)
                     } else {
-                        Button("Restore") { viewModel.restorePurchases(onSuccess: { dismiss() }) }
-                            .font(.system(size: 12))
-                            .foregroundColor(.gray)
+                        Text("Restore")
+                            .font(.system(size: 13))
+                            .foregroundColor(.black.opacity(0.4))
                     }
-
-                    Text("•").font(.system(size: 12)).foregroundColor(.gray)
-
-                    Link("Privacy", destination: URL(string: "https://chat-story-maker.onrender.com/privacy")!)
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-
-                    Text("•").font(.system(size: 12)).foregroundColor(.gray)
-
-                    Link("Terms", destination: URL(string: "https://chat-story-maker.onrender.com/terms")!)
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
                 }
-                .padding(.bottom, 8)
+                .disabled(viewModel.isRestoring)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .background(Color.white)
         }
     }
 
-    private func featureRow(icon: String, text: String) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: "#E07B5E").opacity(0.1))
-                    .frame(width: 36, height: 36)
+    private var heroSection: some View {
+        VStack(spacing: 18) {
+            Text(isLimitTriggered ? "Keep Every Story\nFlowing" : "Create Viral Chat\nVideos Faster")
+                .font(.system(size: 30, weight: .bold))
+                .foregroundColor(.black.opacity(0.88))
+                .multilineTextAlignment(.center)
+                .lineSpacing(2)
 
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "#E07B5E"))
+            Text(isLimitTriggered ? "Unlock unlimited exports and AI story generation" : "Unlimited exports, smarter creation, zero limits")
+                .font(.system(size: 14))
+                .foregroundColor(.black.opacity(0.4))
+                .padding(.top, -8)
+
+            VStack(spacing: 10) {
+                featureRow(icon: "video.fill", title: "Unlimited Video Exports", subtitle: "Export every story for TikTok, Reels, and Shorts")
+                featureRow(icon: "sparkles", title: "Unlimited AI Story Generation", subtitle: "Generate more dramatic scenes in seconds")
+                featureRow(icon: "text.bubble.fill", title: "Creator-Ready Story Editor", subtitle: "Fine-tune pacing, characters, and twists")
+                featureRow(icon: "chart.line.uptrend.xyaxis", title: "No More Usage Limits", subtitle: "Create whenever inspiration hits")
             }
-
-            Text(text)
-                .font(.system(size: 16))
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 2)
         }
-        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, alignment: .top)
     }
 
-    private func planOptionView(plan: PlanDisplayInfo, planId: String) -> some View {
-        let isSelected = viewModel.selectedPlan == planId
+    private var bottomSection: some View {
+        VStack(spacing: 10) {
+            if let plan = viewModel.lifetimePlanInfo {
+                planTile(plan: plan)
+            }
+            if let plan = viewModel.yearlyPlanInfo {
+                planTile(plan: plan)
+            }
+            if let plan = viewModel.monthlyPlanInfo {
+                planTile(plan: plan)
+            }
+            if let plan = viewModel.weeklyPlanInfo {
+                planTile(plan: plan)
+            }
 
-        return Button(action: { viewModel.selectPlan(planId) }) {
-            HStack(spacing: 12) {
-                // Left side: Plan info (matching Quiz Maker AI layout)
-                VStack(alignment: .leading, spacing: 2) {
-                    // Plan name - small header
-                    Text(plan.title)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.gray)
-                        .tracking(0.5)
+            Spacer().frame(height: 8)
 
-                    // Price info - THE BIG/PROMINENT ONE
-                    Text(plan.priceInfo)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(plan.isFreeOffer ? Color(hex: "#1A9E6D") : .black)
+            Button(action: {
+                viewModel.handlePurchase(onSuccess: { dismiss() })
+            }) {
+                Text(viewModel.buttonText)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color(hex: "#E07B5E"))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .disabled(viewModel.isPurchasing)
 
-                    // Secondary info
-                    Text(plan.secondaryInfo)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.gray)
+            HStack {
+                HStack(spacing: 0) {
+                    footerLink("Privacy", urlString: "https://textery-6e482.web.app/privacy")
+                    Text(" | ")
+                        .font(.system(size: 13))
+                        .foregroundColor(.black.opacity(0.25))
+                    footerLink("Terms", urlString: "https://textery-6e482.web.app/terms")
                 }
 
                 Spacer()
 
-                // Right side: Radio button on top, badge below
-                VStack(alignment: .trailing, spacing: 6) {
-                    // Radio button
-                    ZStack {
-                        Circle()
-                            .stroke(isSelected ? Color(hex: "#E07B5E") : Color.gray.opacity(0.4), lineWidth: 2)
-                            .frame(width: 20, height: 20)
+                Text("Cancel Anytime")
+                    .font(.system(size: 13))
+                    .foregroundColor(.black.opacity(0.35))
+            }
+            .padding(.top, 2)
+            .padding(.bottom, 5)
+        }
+    }
 
-                        if isSelected {
-                            Circle()
-                                .fill(Color(hex: "#E07B5E"))
-                                .frame(width: 10, height: 10)
-                        }
+    private func featureRow(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(hex: "#E07B5E").opacity(0.12))
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(Color(hex: "#E07B5E"))
+            }
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.black.opacity(0.87))
+
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(.black.opacity(0.4))
+            }
+
+            Spacer()
+        }
+    }
+
+    private func planTile(plan: PlanTileInfo) -> some View {
+        let isSelected = viewModel.selectedPlan == plan.id
+
+        return Button(action: {
+            viewModel.selectPlan(plan.id)
+        }) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let label = plan.label {
+                        Text(label)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(isSelected ? Color(hex: "#E07B5E") : .black.opacity(0.4))
                     }
 
-                    // Badge below radio button
-                    if let badge = plan.badge {
-                        HStack(spacing: 2) {
-                            if plan.badgeColor == .orange {
-                                Text("🔥")
-                                    .font(.system(size: 11))
-                            }
-                            Text(badge)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(plan.badgeColor == Color(hex: "#1A9E6D") ? Color(hex: "#1A9E6D") : .gray)
-                                .tracking(0.3)
-                        }
+                    if let highlightPrefix = plan.highlightPrefix, let highlightText = plan.highlightText {
+                        (
+                            Text(highlightPrefix)
+                                .foregroundColor(.black.opacity(0.87))
+                            +
+                            Text(highlightText)
+                                .foregroundColor(Color(hex: "#E07B5E"))
+                        )
+                        .font(.system(size: 17, weight: .bold))
+                    } else {
+                        Text(plan.priceText)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.black.opacity(0.87))
                     }
+
+                    Text(plan.periodText)
+                        .font(.system(size: 13))
+                        .foregroundColor(.black.opacity(0.45))
+                }
+
+                Spacer(minLength: 12)
+
+                if let badge = plan.badge, !badge.isEmpty {
+                    Text(badge)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E07B5E"))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color(hex: "#E07B5E").opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 14)
-            .background(isSelected ? Color(hex: "#E07B5E").opacity(0.1) : Color.white)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .background(isSelected ? Color(hex: "#E07B5E").opacity(0.08) : Color.black.opacity(0.03))
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color(hex: "#E07B5E") : Color.gray.opacity(0.3), lineWidth: 2)
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? Color(hex: "#E07B5E") : Color.black.opacity(0.1), lineWidth: isSelected ? 1.5 : 1)
             )
-            .cornerRadius(12)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func footerLink(_ title: String, urlString: String) -> some View {
+        Link(destination: URL(string: urlString)!) {
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.black.opacity(0.35))
         }
     }
 }
 
-// MARK: - Plan Display Info
+private struct SizedBox<Content: View>: View {
+    let width: CGFloat
+    let content: Content
 
-struct PlanDisplayInfo {
-    let title: String
-    let priceInfo: String
-    let secondaryInfo: String
-    let badge: String?
-    let badgeColor: Color
-    let isFreeOffer: Bool
+    init(width: CGFloat, @ViewBuilder content: () -> Content) {
+        self.width = width
+        self.content = content()
+    }
+
+    var body: some View {
+        content.frame(width: width)
+    }
 }
 
-// MARK: - View Model
+struct PlanTileInfo {
+    let id: String
+    let label: String?
+    let priceText: String
+    let periodText: String
+    let badge: String?
+    let highlightPrefix: String?
+    let highlightText: String?
+}
 
 @MainActor
-class PaywallViewModel: ObservableObject {
-
-    // ===== DEBUG TEST FLAGS =====
-    // Set all to false for production or to use actual App Store offers
-    // These simulate intro offers without needing App Store Connect setup
-
-    // Yearly: Test free trial (e.g., "FREE for 3 days, then $29.99/year")
-    private let testYearlyFreeTrial = false
-    private let testYearlyFreeTrialDays = 3
-    private let testYearlyPrice = "$29.99"
-
-    // Monthly: Test free trial (e.g., "FREE for 3 days, then $9.99/month")
-    private let testMonthlyFreeTrial = false
-    private let testMonthlyFreeTrialDays = 3
-    private let testMonthlyPrice = "$9.99"
-
-    // Weekly: Test paid intro (e.g., "$0.99 first week, then $4.99/week")
-    private let testWeeklyPaidIntro = false
-    private let testWeeklyIntroPrice = "$0.99"
-    private let testWeeklyPrice = "$4.99"
-
-    // Weekly: Test free trial (e.g., "FREE for 3 days, then $4.99/week")
-    // Note: If both testWeeklyPaidIntro and testWeeklyFreeTrial are true, paid intro takes priority
-    private let testWeeklyFreeTrial = false
-    private let testWeeklyFreeTrialDays = 3
-
-    // ===== END DEBUG FLAGS =====
-
+final class PaywallViewModel: ObservableObject {
     @Published var offering: Offering?
     @Published var yearlyPackage: Package?
     @Published var monthlyPackage: Package?
     @Published var weeklyPackage: Package?
+    @Published var lifetimePackage: Package?
     @Published var selectedPlan: String = "yearly"
     @Published var isLoading = true
     @Published var isPurchasing = false
@@ -319,247 +372,69 @@ class PaywallViewModel: ObservableObject {
     @Published var canClose = false
     @Published var progress: CGFloat = 0
     @Published var showError = false
-    @Published var iconRotation: Double = 0
-    var errorMessage = ""
+    @Published var errorMessage = ""
+    @Published var iconPulse: CGFloat = 1.0
+
+    var totalSeconds = 0
+    var hardPaywall = false
+    var showLoadingIndicator = true
 
     private var timer: Timer?
     private var secondsRemaining = 0
-    private var totalSeconds = 0
-    private var rotationTimer: Timer?
+    private var pulseTimer: Timer?
+    private var paywallSource = "app_launch"
 
     init() {
-        startRingingAnimation()
+        startPulseAnimation()
     }
 
-    // MARK: - Dynamic Plan Info
-
-    var yearlyPlanInfo: PlanDisplayInfo? {
-        guard let package = yearlyPackage else { return nil }
+    var yearlyPlanInfo: PlanTileInfo? {
         let settings = PaywallSettingsService.shared.getSettings()
-        guard settings.paywallYearly else { return nil }
-        return buildPlanInfo(package: package, weeksPerPeriod: 52, periodName: "year")
+        guard settings.paywallYearly, let package = yearlyPackage else { return nil }
+        return buildSubscriptionPlanInfo(planID: "yearly", package: package, label: "Auto Renewal", badge: calculateYearlySavings())
     }
 
-    var monthlyPlanInfo: PlanDisplayInfo? {
-        guard let package = monthlyPackage else { return nil }
+    var monthlyPlanInfo: PlanTileInfo? {
         let settings = PaywallSettingsService.shared.getSettings()
-        guard settings.paywallMonthly else { return nil }
-        return buildPlanInfo(package: package, weeksPerPeriod: 4, periodName: "month")
+        guard settings.paywallMonthly, let package = monthlyPackage else { return nil }
+        return buildSubscriptionPlanInfo(planID: "monthly", package: package, label: "Auto Renewal", badge: nil)
     }
 
-    var weeklyPlanInfo: PlanDisplayInfo? {
-        guard let package = weeklyPackage else { return nil }
+    var weeklyPlanInfo: PlanTileInfo? {
         let settings = PaywallSettingsService.shared.getSettings()
-        guard settings.paywallWeekly else { return nil }
-        return buildWeeklyPlanInfo(package: package)
+        guard settings.paywallWeekly, let package = weeklyPackage else { return nil }
+        return buildSubscriptionPlanInfo(planID: "weekly", package: package, label: "Auto Renewal", badge: nil)
     }
 
-    private func buildPlanInfo(package: Package, weeksPerPeriod: Int, periodName: String) -> PlanDisplayInfo {
-        let product = package.storeProduct
-        let intro = product.introductoryDiscount
-        let price = product.price as Decimal
-        let priceString = product.localizedPriceString
-
-        // Check for test mode based on period
-        let isTestingFreeTrial: Bool
-        let testFreeTrialDays: Int
-        let testPrice: String
-
-        if periodName == "year" {
-            isTestingFreeTrial = testYearlyFreeTrial
-            testFreeTrialDays = testYearlyFreeTrialDays
-            testPrice = testYearlyPrice
-        } else {
-            isTestingFreeTrial = testMonthlyFreeTrial
-            testFreeTrialDays = testMonthlyFreeTrialDays
-            testPrice = testMonthlyPrice
-        }
-
-        // Calculate per-week price
-        let perWeekPrice = NSDecimalNumber(decimal: price / Decimal(weeksPerPeriod)).doubleValue
-        let currencySymbol = extractCurrencySymbol(from: priceString)
-        let perWeekFormatted = String(format: "%.2f", perWeekPrice)
-
-        // Title with per-week price (YEARLY, MONTHLY)
-        let title = "\(periodName.uppercased())LY (Only \(currencySymbol)\(perWeekFormatted)/week)"
-
-        // Determine intro offer type
-        let isFreeIntro = intro != nil && intro!.price == 0
-        let isPaidIntro = intro != nil && (intro!.price as Decimal) > 0
-
-        var priceInfo: String
-        var secondaryInfo: String
-        var isFreeOffer = false
-
-        // DEBUG: Test free trial override
-        if isTestingFreeTrial {
-            let unit = testFreeTrialDays == 1 ? "day" : "days"
-            priceInfo = "FREE for \(testFreeTrialDays) \(unit)"
-            secondaryInfo = "then \(testPrice)/\(periodName)"
-            isFreeOffer = true
-        } else if isFreeIntro, let intro = intro {
-            // Real free trial from App Store
-            let units = intro.subscriptionPeriod.value
-            let unit = formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)
-            priceInfo = "FREE for \(units) \(unit)"
-            secondaryInfo = "then \(priceString)/\(periodName)"
-            isFreeOffer = true
-        } else if isPaidIntro, let intro = intro {
-            // Paid intro offer
-            let introPrice = intro.localizedPriceString
-            let units = intro.subscriptionPeriod.value
-            let unit = formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)
-            priceInfo = "\(introPrice) first \(unit)"
-            secondaryInfo = "then \(priceString)/\(periodName)"
-        } else {
-            // No intro
-            priceInfo = priceString
-            secondaryInfo = "Billed \(periodName)ly"
-        }
-
-        // Calculate savings badge
-        let savingsBadge = calculateSavingsVsWeekly(price: price, weeksPerPeriod: weeksPerPeriod)
-
-        return PlanDisplayInfo(
-            title: title,
-            priceInfo: priceInfo,
-            secondaryInfo: secondaryInfo,
-            badge: savingsBadge,
-            badgeColor: .gray,  // Gray text badge like Quiz Maker AI
-            isFreeOffer: isFreeOffer
+    var lifetimePlanInfo: PlanTileInfo? {
+        let settings = PaywallSettingsService.shared.getSettings()
+        guard settings.paywallLifetime, let package = lifetimePackage else { return nil }
+        return PlanTileInfo(
+            id: "lifetime",
+            label: "ONE TIME",
+            priceText: package.storeProduct.localizedPriceString,
+            periodText: "/ Lifetime",
+            badge: "Best Value",
+            highlightPrefix: nil,
+            highlightText: nil
         )
     }
-
-    private func buildWeeklyPlanInfo(package: Package) -> PlanDisplayInfo {
-        let product = package.storeProduct
-        let intro = product.introductoryDiscount
-        let priceString = product.localizedPriceString
-
-        let isFreeIntro = intro != nil && intro!.price == 0
-        let isPaidIntro = intro != nil && (intro!.price as Decimal) > 0
-
-        var priceInfo: String
-        var secondaryInfo: String
-        var badge: String? = nil
-        var badgeColor: Color = .orange
-        var isFreeOffer = false
-
-        // DEBUG: Test paid intro override (takes priority)
-        if testWeeklyPaidIntro {
-            priceInfo = "\(testWeeklyIntroPrice) first week"
-            secondaryInfo = "then \(testWeeklyPrice)/week"
-            badge = "MOST POPULAR"
-            badgeColor = .orange
-        }
-        // DEBUG: Test free trial override
-        else if testWeeklyFreeTrial {
-            let unit = testWeeklyFreeTrialDays == 1 ? "day" : "days"
-            priceInfo = "FREE for \(testWeeklyFreeTrialDays) \(unit)"
-            secondaryInfo = "then \(testWeeklyPrice)/week"
-            isFreeOffer = true
-        }
-        // Real free trial from App Store
-        else if isFreeIntro, let intro = intro {
-            let units = intro.subscriptionPeriod.value
-            let unit = formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)
-            priceInfo = "FREE for \(units) \(unit)"
-            secondaryInfo = "then \(priceString)/week"
-            isFreeOffer = true
-        }
-        // Real paid intro from App Store
-        else if isPaidIntro, let intro = intro {
-            let introPrice = intro.localizedPriceString
-            priceInfo = "\(introPrice) first week"
-            secondaryInfo = "then \(priceString)/week"
-            badge = "MOST POPULAR"
-            badgeColor = .orange
-        }
-        // No intro
-        else {
-            priceInfo = priceString
-            secondaryInfo = "Billed weekly"
-        }
-
-        return PlanDisplayInfo(
-            title: "WEEKLY",
-            priceInfo: priceInfo,
-            secondaryInfo: secondaryInfo,
-            badge: badge,
-            badgeColor: badgeColor,
-            isFreeOffer: isFreeOffer
-        )
-    }
-
-    private func extractCurrencySymbol(from priceString: String) -> String {
-        // Find first non-digit, non-decimal character
-        for char in priceString {
-            if !char.isNumber && char != "." && char != "," && char != " " {
-                return String(char)
-            }
-        }
-        return "$"
-    }
-
-    private func formatPeriodUnit(_ unit: SubscriptionPeriod.Unit, value: Int) -> String {
-        switch unit {
-        case .day: return value == 1 ? "day" : "days"
-        case .week: return value == 1 ? "week" : "weeks"
-        case .month: return value == 1 ? "month" : "months"
-        case .year: return value == 1 ? "year" : "years"
-        @unknown default: return "period"
-        }
-    }
-
-    private func calculateSavingsVsWeekly(price: Decimal, weeksPerPeriod: Int) -> String? {
-        guard let weeklyPackage = weeklyPackage else { return nil }
-        let weeklyPrice = weeklyPackage.storeProduct.price as Decimal
-        let weeklyAnnualized = weeklyPrice * Decimal(weeksPerPeriod)
-        guard weeklyAnnualized > 0 else { return nil }
-        let savings = ((weeklyAnnualized - price) / weeklyAnnualized) * 100
-        let savingsInt = Int(NSDecimalNumber(decimal: savings).doubleValue)
-        return savingsInt > 0 ? "SAVE \(savingsInt)%" : nil
-    }
-
-    // MARK: - Button Text
 
     var buttonText: String {
-        // Check for test free trial flags first
-        switch selectedPlan {
-        case "yearly":
-            if testYearlyFreeTrial { return "Try For FREE" }
-        case "monthly":
-            if testMonthlyFreeTrial { return "Try For FREE" }
-        case "weekly":
-            if testWeeklyFreeTrial { return "Try For FREE" }
-        default:
-            break
-        }
-
-        // Check real intro offers
-        let package: Package?
-        switch selectedPlan {
-        case "yearly": package = yearlyPackage
-        case "monthly": package = monthlyPackage
-        case "weekly": package = weeklyPackage
-        default: package = nil
-        }
-
-        guard let pkg = package else { return "Subscribe" }
-        let intro = pkg.storeProduct.introductoryDiscount
-
-        // Free trial shows "Try For FREE", everything else shows "Continue"
-        if let intro = intro, intro.price == 0 {
-            return "Try For FREE"
-        }
-        return "Continue"
+        selectedPlanHasFreeTrial ? "Try for FREE" : "Continue"
     }
 
-    // MARK: - Load Offering
+    private var selectedPlanHasFreeTrial: Bool {
+        package(for: selectedPlan)?.storeProduct.introductoryDiscount?.price == 0
+    }
 
-    func loadOffering(closeDelay: Int) {
-        totalSeconds = closeDelay
-        secondsRemaining = closeDelay
-        canClose = closeDelay == 0
+    func loadOffering(closeDelay: Int, showLoadingIndicator: Bool, source: String) {
+        self.totalSeconds = closeDelay
+        self.secondsRemaining = closeDelay
+        self.canClose = closeDelay == 0
+        self.showLoadingIndicator = showLoadingIndicator
+        self.paywallSource = source
+        self.hardPaywall = PaywallSettingsService.shared.getSettings().hardPaywall
 
         Task {
             if let offerings = await SubscriptionService.shared.getOfferings(),
@@ -568,10 +443,8 @@ class PaywallViewModel: ObservableObject {
                 self.yearlyPackage = offering.annual
                 self.monthlyPackage = offering.monthly
                 self.weeklyPackage = offering.weekly
-
-                // Smart default selection
+                self.lifetimePackage = offering.lifetime
                 selectDefaultPlan()
-
                 self.isLoading = false
                 startCloseTimer()
             } else {
@@ -582,84 +455,12 @@ class PaywallViewModel: ObservableObject {
         }
     }
 
-    private func selectDefaultPlan() {
-        let settings = PaywallSettingsService.shared.getSettings()
-
-        // Check if weekly has paid intro (most attractive offer)
-        if let weeklyPackage = weeklyPackage,
-           let intro = weeklyPackage.storeProduct.introductoryDiscount,
-           (intro.price as Decimal) > 0,
-           settings.paywallWeekly {
-            selectedPlan = "weekly"
-            return
-        }
-
-        // Otherwise prefer yearly
-        if yearlyPackage != nil && settings.paywallYearly {
-            selectedPlan = "yearly"
-            return
-        }
-
-        // Fallback to monthly
-        if monthlyPackage != nil && settings.paywallMonthly {
-            selectedPlan = "monthly"
-            return
-        }
-
-        // Final fallback to weekly
-        if weeklyPackage != nil && settings.paywallWeekly {
-            selectedPlan = "weekly"
-        }
-    }
-
-    private func startCloseTimer() {
-        guard totalSeconds > 0 else { return }
-
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            Task { @MainActor in
-                if self.secondsRemaining > 0 {
-                    self.secondsRemaining -= 1
-                    self.progress = CGFloat(self.totalSeconds - self.secondsRemaining) / CGFloat(self.totalSeconds)
-                } else {
-                    self.canClose = true
-                    self.timer?.invalidate()
-                }
-            }
-        }
-    }
-
-    private func startRingingAnimation() {
-        rotationTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            Task { @MainActor in
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    if self.iconRotation == 0 {
-                        self.iconRotation = 5
-                    } else if self.iconRotation > 0 {
-                        self.iconRotation = -5
-                    } else {
-                        self.iconRotation = 0
-                    }
-                }
-            }
-        }
-    }
-
     func selectPlan(_ plan: String) {
         selectedPlan = plan
     }
 
     func handlePurchase(onSuccess: @escaping () -> Void) {
-        let package: Package?
-        switch selectedPlan {
-        case "yearly": package = yearlyPackage
-        case "monthly": package = monthlyPackage
-        case "weekly": package = weeklyPackage
-        default: package = nil
-        }
-
-        guard let package = package else { return }
+        guard let package = package(for: selectedPlan) else { return }
 
         isPurchasing = true
 
@@ -669,8 +470,10 @@ class PaywallViewModel: ObservableObject {
 
             switch result {
             case .success:
+                AnalyticsService.shared.trackPurchaseCompleted(plan: selectedPlan)
                 onSuccess()
             case .failure(let error):
+                AnalyticsService.shared.trackPurchaseFailed(plan: selectedPlan, error: error.localizedDescription)
                 errorMessage = error.localizedDescription
                 showError = true
             }
@@ -686,22 +489,188 @@ class PaywallViewModel: ObservableObject {
 
             switch result {
             case .success:
+                AnalyticsService.shared.trackRestorePurchases(success: true)
                 onSuccess()
             case .failure(let error):
+                AnalyticsService.shared.trackRestorePurchases(success: false)
                 errorMessage = error.localizedDescription
                 showError = true
             }
         }
     }
 
+    private func package(for plan: String) -> Package? {
+        switch plan {
+        case "yearly": return yearlyPackage
+        case "monthly": return monthlyPackage
+        case "weekly": return weeklyPackage
+        case "lifetime": return lifetimePackage
+        default: return nil
+        }
+    }
+
+    private func selectDefaultPlan() {
+        let settings = PaywallSettingsService.shared.getSettings()
+
+        let shownPlans: [(String, Package?, Bool)] = [
+            ("yearly", yearlyPackage, settings.paywallYearly),
+            ("monthly", monthlyPackage, settings.paywallMonthly),
+            ("weekly", weeklyPackage, settings.paywallWeekly)
+        ]
+
+        if let freeTrialPlan = shownPlans.first(where: { $0.2 && $0.1?.storeProduct.introductoryDiscount?.price == 0 })?.0 {
+            selectedPlan = freeTrialPlan
+            return
+        }
+
+        if settings.paywallYearly, yearlyPackage != nil {
+            selectedPlan = "yearly"
+        } else if settings.paywallMonthly, monthlyPackage != nil {
+            selectedPlan = "monthly"
+        } else if settings.paywallWeekly, weeklyPackage != nil {
+            selectedPlan = "weekly"
+        } else if settings.paywallLifetime, lifetimePackage != nil {
+            selectedPlan = "lifetime"
+        }
+    }
+
+    private func buildSubscriptionPlanInfo(planID: String, package: Package, label: String, badge: String?) -> PlanTileInfo {
+        let product = package.storeProduct
+
+        if let intro = product.introductoryDiscount {
+            if intro.price == 0 {
+                let units = intro.subscriptionPeriod.value
+                let freeText = "\(units) \(formatPeriodUnit(intro.subscriptionPeriod.unit, value: units)) free"
+                return PlanTileInfo(
+                    id: planID,
+                    label: nil,
+                    priceText: "",
+                    periodText: "then \(product.localizedPriceString)/\(periodLabel(planID))",
+                    badge: badge,
+                    highlightPrefix: "\(periodLabelLong(planID)) · ",
+                    highlightText: freeText
+                )
+            }
+
+            let introLength = "\(intro.subscriptionPeriod.value)-\(singularUnit(intro.subscriptionPeriod.unit).capitalized)"
+            return PlanTileInfo(
+                id: planID,
+                label: nil,
+                priceText: "\(intro.localizedPriceString) for \(introLength)",
+                periodText: "then \(product.localizedPriceString)/\(periodLabel(planID))",
+                badge: badge,
+                highlightPrefix: nil,
+                highlightText: nil
+            )
+        }
+
+        return PlanTileInfo(
+            id: planID,
+            label: label,
+            priceText: product.localizedPriceString,
+            periodText: "/ \(periodLabel(planID).capitalized)",
+            badge: badge,
+            highlightPrefix: nil,
+            highlightText: nil
+        )
+    }
+
+    private func calculateYearlySavings() -> String? {
+        guard let yearlyPackage = yearlyPackage else { return nil }
+        let yearlyPrice = yearlyPackage.storeProduct.price as Decimal
+        let settings = PaywallSettingsService.shared.getSettings()
+
+        if settings.paywallWeekly, let weeklyPackage = weeklyPackage {
+            let weeklyAnnualized = (weeklyPackage.storeProduct.price as Decimal) * 52
+            guard weeklyAnnualized > 0 else { return nil }
+            let savings = ((weeklyAnnualized - yearlyPrice) / weeklyAnnualized * 100).roundedDecimalToInt
+            return savings > 0 ? "Save \(savings)%" : nil
+        }
+
+        if settings.paywallMonthly, let monthlyPackage = monthlyPackage {
+            let monthlyAnnualized = (monthlyPackage.storeProduct.price as Decimal) * 12
+            guard monthlyAnnualized > 0 else { return nil }
+            let savings = ((monthlyAnnualized - yearlyPrice) / monthlyAnnualized * 100).roundedDecimalToInt
+            return savings > 0 ? "Save \(savings)%" : nil
+        }
+
+        return nil
+    }
+
+    private func periodLabelLong(_ plan: String) -> String {
+        switch plan {
+        case "weekly": return "Weekly"
+        case "monthly": return "Monthly"
+        case "yearly": return "Yearly"
+        default: return ""
+        }
+    }
+
+    private func periodLabel(_ plan: String) -> String {
+        switch plan {
+        case "weekly": return "week"
+        case "monthly": return "month"
+        case "yearly": return "year"
+        default: return "period"
+        }
+    }
+
+    private func singularUnit(_ unit: SubscriptionPeriod.Unit) -> String {
+        switch unit {
+        case .day: return "day"
+        case .week: return "week"
+        case .month: return "month"
+        case .year: return "year"
+        @unknown default: return "period"
+        }
+    }
+
+    private func formatPeriodUnit(_ unit: SubscriptionPeriod.Unit, value: Int) -> String {
+        let label = singularUnit(unit)
+        return value == 1 ? label : "\(label)s"
+    }
+
+    private func startCloseTimer() {
+        guard totalSeconds > 0 else { return }
+
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self else { return }
+
+            Task { @MainActor in
+                if self.secondsRemaining > 0 {
+                    self.secondsRemaining -= 1
+                    self.progress = CGFloat(self.totalSeconds - self.secondsRemaining) / CGFloat(max(self.totalSeconds, 1))
+                } else {
+                    self.canClose = true
+                    timer.invalidate()
+                }
+            }
+        }
+    }
+
+    private func startPulseAnimation() {
+        pulseTimer?.invalidate()
+        pulseTimer = Timer.scheduledTimer(withTimeInterval: 0.9, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                self.iconPulse = self.iconPulse == 1.0 ? 1.08 : 1.0
+            }
+        }
+    }
+
     deinit {
         timer?.invalidate()
-        rotationTimer?.invalidate()
+        pulseTimer?.invalidate()
     }
 }
 
-// MARK: - Preview
+private extension Decimal {
+    var roundedDecimalToInt: Int {
+        Int(NSDecimalNumber(decimal: self).doubleValue.rounded())
+    }
+}
 
 #Preview {
-    PaywallView(isLimitTriggered: false)
+    PaywallView()
 }

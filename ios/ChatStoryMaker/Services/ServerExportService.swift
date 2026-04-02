@@ -14,7 +14,7 @@ class ServerExportService {
 
     // Production server on Google Cloud Run
     // For local testing: "http://YOUR_MAC_IP:8000"
-    static var baseURL: String = "https://textery-api-791270482529.us-central1.run.app"
+    static var baseURL: String = "https://textery-api-7uam4panra-uc.a.run.app"
 
     // MARK: - Models
 
@@ -236,6 +236,8 @@ class ServerExportService {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue(TrackingService.shared.currentUserID, forHTTPHeaderField: "X-User-ID")
+        urlRequest.setValue(TrackingService.shared.currentAppVersion, forHTTPHeaderField: "X-App-Version")
 
         let encoder = JSONEncoder()
         urlRequest.httpBody = try encoder.encode(request)

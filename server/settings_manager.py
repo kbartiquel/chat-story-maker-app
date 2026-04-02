@@ -20,11 +20,12 @@ DEFAULT_SETTINGS = {
     "hardPaywall": False,
     "paywallCloseButtonDelay": 3,
     "paywallCloseButtonDelayOnLimit": 5,
+    "paywallShowLoadingIndicator": True,
     "showPaywallOnStart": True,
-    "paywallMonthly": True,
+    "paywallMonthly": False,
     "paywallWeekly": True,
-    "paywallLifetime": True,
-    "paywallYearly": False,
+    "paywallLifetime": False,
+    "paywallYearly": True,
 }
 
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
@@ -36,11 +37,11 @@ def load_settings() -> dict[str, Any]:
         try:
             if os.path.exists(SETTINGS_FILE):
                 with open(SETTINGS_FILE, "r") as f:
-                    settings = json.load(f)
-                    # Ensure all default keys exist
-                    for key, value in DEFAULT_SETTINGS.items():
-                        if key not in settings:
-                            settings[key] = value
+                    raw_settings = json.load(f)
+                    settings = DEFAULT_SETTINGS.copy()
+                    for key in DEFAULT_SETTINGS:
+                        if key in raw_settings:
+                            settings[key] = raw_settings[key]
                     return settings
         except (json.JSONDecodeError, IOError) as e:
             print(f"Error loading settings: {e}")
@@ -52,15 +53,15 @@ def save_settings(settings: dict[str, Any]) -> dict[str, Any]:
     """Save settings to JSON file."""
     with _lock:
         try:
-            # Ensure all required keys are present
-            for key, value in DEFAULT_SETTINGS.items():
-                if key not in settings:
-                    settings[key] = value
+            sanitized_settings = DEFAULT_SETTINGS.copy()
+            for key in DEFAULT_SETTINGS:
+                if key in settings:
+                    sanitized_settings[key] = settings[key]
 
             with open(SETTINGS_FILE, "w") as f:
-                json.dump(settings, f, indent=2)
+                json.dump(sanitized_settings, f, indent=2)
 
-            return settings
+            return sanitized_settings
         except IOError as e:
             print(f"Error saving settings: {e}")
             raise
