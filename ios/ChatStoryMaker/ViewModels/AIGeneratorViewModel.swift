@@ -121,7 +121,7 @@ class AIGeneratorViewModel {
             return
         }
 
-        // For group chats, use the group_name as conversation title (realistic chat names)
+        // For group scenes, use the generated cast title when available
         // For 1-on-1 chats, use the story title
         let conversationTitle = isGroupChat ? (story.groupName ?? story.title) : story.title
         let conversation = Conversation(title: conversationTitle, isGroupChat: isGroupChat)
@@ -167,6 +167,8 @@ class AIGeneratorViewModel {
                 conversation.messages.append(message)
             }
         }
+
+        conversation.sceneBreaks = story.sceneBreaks
 
         modelContext.insert(conversation)
         try? modelContext.save()

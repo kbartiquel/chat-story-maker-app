@@ -24,6 +24,13 @@ struct ExportView: View {
             ZStack {
                 ScrollView {
                     VStack(spacing: 24) {
+                        StoryVideoHeaderCard(conversation: viewModel.conversation)
+
+                        VideoPreviewView(
+                            conversation: viewModel.conversation,
+                            settings: viewModel.settings
+                        )
+
                         // Format picker
                         FormatPickerView(selectedFormat: $viewModel.settings.format)
 
@@ -49,7 +56,7 @@ struct ExportView: View {
                     )
                 }
             }
-            .navigationTitle("Export Video")
+            .navigationTitle("Export Story Video")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -101,7 +108,7 @@ struct ExportView: View {
                     }
                 }
             } message: {
-                Text("This is FICTIONAL content for entertainment. Share responsibly and ethically.")
+                Text("This story video is fictional entertainment content. Share it responsibly and clearly as a created scene.")
             }
         }
     }
@@ -152,8 +159,12 @@ struct VideoPreviewView: View {
                 .aspectRatio(aspectRatio, contentMode: .fit)
                 .overlay(
                     VStack(spacing: 0) {
-                        // iMessage-style header
+                        StoryVideoPreviewBanner()
+                            .padding(.horizontal, 12)
+                            .padding(.top, 12)
+
                         previewHeader
+                            .padding(.top, 4)
                             .padding(.bottom, 8)
 
                         Divider()
@@ -229,25 +240,24 @@ struct VideoPreviewView: View {
 
             // Name with chevron
             HStack(spacing: 2) {
-                Text(mainContact?.name ?? conversation.title)
+                Text(conversation.title)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(settings.darkMode ? .white : .black)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundColor(.gray)
             }
+
+            Text("Scripted scene")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
         .overlay(alignment: .leading) {
-            // Back arrow
-            Image(systemName: "chevron.left")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.blue)
+            Image(systemName: "sparkles")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color(hex: "#E07B5E"))
                 .padding(.leading, 12)
                 .padding(.top, 8)
         }
-        // Video icon removed
     }
 
     @ViewBuilder
@@ -269,39 +279,27 @@ struct VideoPreviewView: View {
             }
 
             if hasGroupName {
-                // Group name (bold)
                 HStack(spacing: 2) {
                     Text(conversation.title)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(settings.darkMode ? .white : .black)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundColor(.gray)
                 }
 
-                // Member count (gray)
-                Text("\(conversation.characters.count) People")
+                Text("Cast scene")
                     .font(.system(size: 9))
                     .foregroundColor(.gray)
             } else {
-                // Just people count
-                HStack(spacing: 2) {
-                    Text("\(conversation.characters.count) People")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(settings.darkMode ? .white : .black)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundColor(.gray)
-                }
+                Text("Cast scene")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(settings.darkMode ? .white : .black)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
         .overlay(alignment: .leading) {
-            // Back arrow
-            Image(systemName: "chevron.left")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.blue)
+            Image(systemName: "sparkles")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color(hex: "#E07B5E"))
                 .padding(.leading, 12)
                 .padding(.top, 8)
         }
@@ -376,6 +374,71 @@ struct FormatPickerView: View {
     }
 }
 
+struct StoryVideoHeaderCard: View {
+    let conversation: Conversation
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("FICTIONAL STORY VIDEO")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(Color(hex: "#E07B5E"))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color(hex: "#E07B5E").opacity(0.12))
+                .clipShape(Capsule())
+
+            Text("Export a creator-ready story scene")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundColor(.primary)
+
+            Text("Preview your scripted scene, choose a format, and turn it into a short-form video.")
+                .font(.system(size: 15))
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 8) {
+                exportInfoChip(title: conversation.isGroupChat ? "Cast scene" : "Two-character scene", icon: "theatermasks.fill")
+                exportInfoChip(title: "Short-form video", icon: "play.rectangle.fill")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+
+    private func exportInfoChip(title: String, icon: String) -> some View {
+        Label(title, systemImage: icon)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(.systemBackground))
+            .clipShape(Capsule())
+    }
+}
+
+struct StoryVideoPreviewBanner: View {
+    var body: some View {
+        HStack {
+            Label("Story Video Preview", systemImage: "film.stack.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Color(hex: "#E07B5E"))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color(hex: "#E07B5E").opacity(0.12))
+                .clipShape(Capsule())
+
+            Spacer()
+
+            Text("Scripted scene")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
 struct ExportSettingsSection: View {
     @Binding var settings: ExportSettings
     let messages: [Message]
@@ -396,10 +459,16 @@ struct ExportSettingsSection: View {
                 .pickerStyle(.segmented)
             }
 
-            Toggle("Show Keyboard", isOn: $settings.showKeyboard)
+            Toggle("Intro Card", isOn: $settings.includeIntroCard)
+            Toggle("Outro Card", isOn: $settings.includeOutroCard)
             Toggle("Typing Indicator", isOn: $settings.showTypingIndicator)
             Toggle("Sound Effects", isOn: $settings.enableSounds)
             Toggle("Dark Mode", isOn: $settings.darkMode)
+
+            // Keyboard toggle only applies when story perspective is off
+            if !settings.storyPerspective {
+                Toggle("Show Keyboard", isOn: $settings.showKeyboard)
+            }
         }
     }
 }

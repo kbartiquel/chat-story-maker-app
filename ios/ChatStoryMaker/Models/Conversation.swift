@@ -8,6 +8,13 @@
 import SwiftData
 import Foundation
 
+struct SceneBreak: Codable, Identifiable, Equatable, Sendable {
+    var id: UUID = UUID()
+    var title: String
+    var subtitle: String?
+    var insertBeforeOrder: Int
+}
+
 @Model
 class Conversation {
     var id: UUID
@@ -36,6 +43,8 @@ class Conversation {
     @Relationship(deleteRule: .cascade)
     var messages: [Message]
 
+    var sceneBreaksData: Data?
+
     init(title: String, theme: ChatTheme = .imessage, isGroupChat: Bool = false) {
         self.id = UUID()
         self.title = title
@@ -49,6 +58,7 @@ class Conversation {
             ? [Character.defaultSender]
             : [Character.defaultSender, Character.defaultReceiver]
         self.messages = []
+        self.sceneBreaksData = nil
     }
 
     var theme: ChatTheme {
@@ -57,5 +67,15 @@ class Conversation {
 
     var sortedMessages: [Message] {
         messages.sorted { $0.order < $1.order }
+    }
+
+    var sceneBreaks: [SceneBreak] {
+        get {
+            guard let sceneBreaksData else { return [] }
+            return (try? JSONDecoder().decode([SceneBreak].self, from: sceneBreaksData)) ?? []
+        }
+        set {
+            sceneBreaksData = try? JSONEncoder().encode(newValue.sorted { $0.insertBeforeOrder < $1.insertBeforeOrder })
+        }
     }
 }

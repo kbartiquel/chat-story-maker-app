@@ -208,3 +208,89 @@ Kim
 - After testing the new paywall layout on device, fine-tune vertical spacing if needed, but keep plans + button pinned.
 - If the product truly no longer uses server render, audit and remove the remaining `/render` export path from app/server code instead of only hiding admin reporting.
 - RevenueCat ID matching is now fixed for new/current app identity, but older anonymous RevenueCat users from before the change may still exist under previous IDs unless migrated.
+
+## 2026-04-07
+
+### Context
+- Apple replied again on Guideline 1.1.6 and explicitly said: apps that allow users to create fake conversations are not an appropriate concept for the App Store.
+- This changed the situation from a metadata/screenshot problem into a product-concept problem.
+
+### Decisions
+- Stop treating the App Store issue as a small review fix.
+- Do not keep resubmitting the same core concept with only wording or disclaimer changes.
+- Pivot Textery from a fake-conversation framing into a fictional dialogue story creator for short-form video content.
+- Keep the engine:
+  - AI generation
+  - dialogue editor
+  - video export
+  - subscriptions
+- Change the product framing, sample content, screenshots, and export presentation so the app reads as authored fictional storytelling rather than realistic private-message recreation.
+- Do not add a persistent watermark to exported videos.
+
+### Changes Made
+- Created a durable pivot plan at:
+  - `docs/APP_STORE_PIVOT_PLAN.md`
+- Updated screenshot mock data in:
+  - `ios/ChatStoryMaker/Services/ScreenshotMockDataService.swift`
+  so seeded stories are clearly fictional instead of realistic private drama.
+- Updated screenshot marketing copy in the HTML screenshot system to reduce realism/deception framing and lean into story-video creation.
+- Exported refreshed screenshot PNGs with safer marketing copy into:
+  - `screenshots/iphone-first-2026/TO UPLOAD/iphone`
+  - `screenshots/iphone-first-2026/TO UPLOAD/ipad`
+- Started the actual product pivot in code across app UI, AI generation, API models, and renderer.
+- App/editor UI now reads more like a story tool:
+  - `ios/ChatStoryMaker/Views/Home/HomeView.swift`
+  - `ios/ChatStoryMaker/Views/Setup/NewConversationView.swift`
+  - `ios/ChatStoryMaker/Views/AIGenerator/AIGeneratorView.swift`
+  - `ios/ChatStoryMaker/Views/Editor/ChatEditorView.swift`
+  - `ios/ChatStoryMaker/Views/Editor/MessageInputView.swift`
+  - `ios/ChatStoryMaker/Views/Export/ExportView.swift`
+- The message composer was changed from a live chat bar into a story-writing panel in:
+  - `ios/ChatStoryMaker/Views/Editor/MessageInputView.swift`
+  - new language includes `SCENE COMPOSER`, `Write the next beat in your story`, `Add Visual`, and `Add Story Beat`
+- AI generation was hardened to fictional-story-only in:
+  - `server/ai_service.py`
+  - `server/main.py`
+  - `server/models.py`
+  - `ios/ChatStoryMaker/Services/AIService.swift`
+- Added a scene-break system so AI can generate interstitial titles such as `3 Hours Later` or `After The Mall`, and conversations can store them:
+  - `server/models.py`
+  - `server/ai_service.py`
+  - `ios/ChatStoryMaker/Models/Conversation.swift`
+  - `ios/ChatStoryMaker/Services/AIService.swift`
+  - `ios/ChatStoryMaker/ViewModels/AIGeneratorViewModel.swift`
+- Export/render flow now supports story-perspective video output instead of relying on a first-person keyboard-typing view:
+  - `server/renderer.py`
+  - `ios/ChatStoryMaker/Models/ExportSettings.swift`
+  - `ios/ChatStoryMaker/Services/ServerExportService.swift`
+  - `ios/ChatStoryMaker/Services/VideoExportService.swift`
+  - `ios/ChatStoryMaker/ViewModels/ExportViewModel.swift`
+- Renderer changes now include:
+  - AI-generated scene interstitial cards between dialogue beats
+  - story-perspective outgoing lines rendered directly in-scene
+  - less dependence on the live keyboard/composer look in exported videos
+
+### Review / Submission Notes
+- The critical issue is now the concept itself as Apple understands it, not just the store assets.
+- Best salvage path:
+  - reframe Textery as a fictional story-video creator
+  - make the editor more story-first
+  - make export output less like a believable real private conversation
+- Do not resubmit the same concept without pivot-level changes.
+
+### Next Steps
+- Finish the export pivot from `docs/APP_STORE_PIVOT_PLAN.md` with visual QA of:
+  - intro card
+  - story header
+  - interstitial scene cards
+  - non-first-person story pacing
+- Update App Store metadata to match the pivot direction.
+- Refresh screenshots again using only the new fictional mock stories.
+- Verify the live Cloud Run deploy after build `57cec5c0-2cf0-419b-998a-8f3bf645d19f` finishes and confirm the new revision is serving scene breaks/story-perspective render behavior.
+
+### Verification
+- `python3 -m py_compile server/ai_service.py server/main.py server/models.py server/renderer.py` succeeded after the scene-break/export pivot.
+- `xcodebuild -project ios/ChatStoryMaker.xcodeproj -scheme ChatStoryMaker -sdk iphonesimulator -configuration Debug build` succeeded after the editor/composer and scene-break changes.
+- Cloud Run deploy was started for the new story-video renderer build, but at last check the remote Cloud Build was still `WORKING`:
+  - build id: `57cec5c0-2cf0-419b-998a-8f3bf645d19f`
+  - live revision still serving at that moment: `textery-api-00006-7d2`

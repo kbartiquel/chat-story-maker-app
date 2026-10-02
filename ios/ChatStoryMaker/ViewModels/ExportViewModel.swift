@@ -137,7 +137,8 @@ class ExportViewModel {
             VideoExportService.ExportMessage(
                 id: msg.id,
                 text: msg.text,
-                characterID: msg.characterID
+                characterID: msg.characterID,
+                order: msg.order
             )
         }
 
@@ -160,6 +161,7 @@ class ExportViewModel {
         // Create config with plain data (thread-safe)
         let config = VideoExportService.ExportConfig(
             messages: exportMessages,
+            conversationSceneBreaks: conversation.sceneBreaks,
             characters: exportCharacters,
             theme: theme,
             settings: exportSettings,

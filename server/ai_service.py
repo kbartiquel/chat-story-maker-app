@@ -1,5 +1,5 @@
 """
-AI service for generating chat story conversations using OpenAI GPT or Anthropic Claude.
+AI service for generating fictional dialogue story scenes using OpenAI GPT or Anthropic Claude.
 """
 
 import os
@@ -101,15 +101,31 @@ def _create_prompt(
     group_name_instruction = ""
     if is_group_chat:
         group_name_instruction = """
-GROUP CHAT NAME:
-- Generate a realistic group chat name that friends would actually use
-- Examples: "birthday squad 🎂", "fam", "work besties", "girls night", "the boys", "roommates", "book club"
-- Keep it casual and authentic - how real friend groups name their chats
-- Can include 1 emoji if fitting"""
+GROUP TITLE:
+- Generate a playful, story-forward cast title for the scene
+- Examples: "Moon Base Crew", "Portal Detention Club", "Dragon Study Hall", "Skyship Squad"
+- Avoid titles that sound like real private friend groups or personal chat threads
+- Can include 1 fitting emoji if it feels stylized"""
 
-    return f"""You are a creative writer specializing in viral chat story content for TikTok, Instagram, and YouTube.
+    scene_break_instruction = """
+SCENE BREAKS:
+- Also create 1-3 short scene break cards that help the video feel like a scripted episode
+- Each scene break must be inserted BEFORE a message index where the next beat begins
+- Great examples:
+  - "3 Hours Later"
+  - "After The Mall"
+  - "Meanwhile"
+  - "The Next Morning"
+  - "Outside The Theater"
+- Keep titles short, cinematic, and creator-friendly
+- Optional subtitle can add a little context, but keep it brief
+- Do not create a scene break before the first message
+- Use 0-based indexes for "insert_before_message_index" and keep them within the message count
+"""
 
-Generate a compelling text message conversation about: {topic}
+    return f"""You are a creative writer specializing in fictional dialogue stories for short-form video content.
+
+Generate a compelling scripted story scene about: {topic}
 
 STORY REQUIREMENTS:
 - {genre_line}
@@ -118,32 +134,35 @@ STORY REQUIREMENTS:
 - {char_instruction}
 {group_name_instruction}
 
-TEXTING STYLE REQUIREMENTS:
-- Make it feel like REAL text messages, not formal writing
-- Use natural texting patterns: "u" for "you", "rn" for "right now", "omg", "lol", etc.
-- Include occasional typos that feel authentic (but not too many)
-- Use emojis naturally (1-2 per message max, not every message)
+SCENE WRITING REQUIREMENTS:
+- Write this as a clearly fictional scripted scene, not as a believable real private conversation
+- Use casual modern dialogue, but keep it polished enough for creator content
+- Characters can sound natural, but the overall scene should feel authored and story-driven
+- Use emojis sparingly (0-1 per message, not every message)
 - Vary message lengths - some short ("ok", "wait what"), some longer
-- Include realistic reactions ("???", "omg", "no way")
-- Add natural pauses in conversation flow
+- Include strong reactions ("wait what", "no way", "that changes everything")
+- Build clean conversational pacing for a video audience
 
 STORY STRUCTURE:
 1. Hook - Start with something attention-grabbing
 2. Build-up - Develop tension/interest
 3. Climax - The main reveal or peak moment
 4. Resolution - Satisfying ending (can be cliffhanger for horror/thriller)
+{scene_break_instruction}
 
 IMPORTANT RULES:
-- Each message should feel authentic to how people actually text
-- Build emotional engagement - make readers invested
+- This must be fictional entertainment content for storytelling/video creation
+- Do not write scenes that look like leaked real private arguments, cheating accusations, harassment, fraud, impersonation, stalking, blackmail, or deceptive proof-style conversations
+- Prefer obviously fictional, heightened, or creator-style premises such as fantasy, sci-fi, mystery adventure, school drama, absurd comedy, or exaggerated ensemble chaos
+- Build emotional engagement without making it feel like a real person's private messages
 - Include unexpected twists or reveals
-- End with impact - make people want to share/comment
+- End with impact - make viewers want to watch the next scene
 
 Return response as ONLY valid JSON (no markdown, no backticks) with this structure:
 
 {{
   "title": "Catchy story title for the video",
-  "group_name": "realistic group chat name (only for group chats with 3+ characters, null for 1-on-1)",
+  "group_name": "story-forward cast title (only for group scenes with 3+ characters, null for 1-on-1)",
   "characters": [
     {{
       "id": "1",
@@ -169,10 +188,76 @@ Return response as ONLY valid JSON (no markdown, no backticks) with this structu
       "character_id": "2",
       "text": "reply text here"
     }}
+  ],
+  "scene_breaks": [
+    {{
+      "title": "3 Hours Later",
+      "subtitle": "The plan changes fast",
+      "insert_before_message_index": 4
+    }}
   ]
 }}
 
 IMPORTANT: Return ONLY the JSON object, no additional text or explanation."""
+
+
+def _fallback_scene_breaks(num_messages: int) -> List[Dict[str, Any]]:
+    """Generate simple scene-break defaults if the model omits them."""
+    if num_messages < 8:
+        return []
+    if num_messages < 12:
+        return [{"title": "Later That Day", "subtitle": None, "insert_before_message_index": max(3, num_messages // 2)}]
+    if num_messages < 18:
+        return [
+            {"title": "A Little Later", "subtitle": None, "insert_before_message_index": max(3, num_messages // 3)},
+            {"title": "That Night", "subtitle": None, "insert_before_message_index": max(6, (num_messages * 2) // 3)},
+        ]
+    return [
+        {"title": "A Few Hours Later", "subtitle": None, "insert_before_message_index": max(4, num_messages // 4)},
+        {"title": "Meanwhile", "subtitle": None, "insert_before_message_index": max(8, num_messages // 2)},
+        {"title": "The Next Morning", "subtitle": None, "insert_before_message_index": max(12, (num_messages * 3) // 4)},
+    ]
+
+
+def _normalize_scene_breaks(scene_breaks: Any, message_count: int) -> List[Dict[str, Any]]:
+    """Sanitize scene breaks so renderer/app can trust the structure."""
+    if not isinstance(scene_breaks, list):
+        scene_breaks = []
+
+    normalized: List[Dict[str, Any]] = []
+    seen_indexes = set()
+
+    for item in scene_breaks:
+        if not isinstance(item, dict):
+            continue
+
+        title = str(item.get("title", "")).strip()
+        if not title:
+            continue
+
+        try:
+            insert_index = int(item.get("insert_before_message_index"))
+        except (TypeError, ValueError):
+            continue
+
+        if insert_index <= 0 or insert_index >= message_count or insert_index in seen_indexes:
+            continue
+
+        subtitle = item.get("subtitle")
+        subtitle_text = str(subtitle).strip() if subtitle else None
+        normalized.append(
+            {
+                "title": title[:40],
+                "subtitle": subtitle_text[:60] if subtitle_text else None,
+                "insert_before_message_index": insert_index,
+            }
+        )
+        seen_indexes.add(insert_index)
+
+    if not normalized:
+        normalized = _fallback_scene_breaks(message_count)
+
+    return sorted(normalized, key=lambda item: item["insert_before_message_index"])
 
 
 def _generate_with_openai(
@@ -203,7 +288,7 @@ def _generate_with_openai(
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a viral content creator who writes engaging chat story conversations. Your stories get millions of views because they feel authentic and emotionally engaging. You always return valid JSON without markdown formatting."
+                    "content": "You write fictional dialogue story scenes for short-form video creators. Your scenes should feel clearly authored, story-forward, and suitable for entertainment content. Never frame output like believable leaked private messages. Always return valid JSON without markdown formatting."
                 },
                 {
                     "role": "user",
@@ -260,7 +345,7 @@ def _generate_with_anthropic(
             model=model,
             max_tokens=4000,
             temperature=0.8,
-            system="You are a viral content creator who writes engaging chat story conversations. Your stories get millions of views because they feel authentic and emotionally engaging. You always return valid JSON without markdown formatting.",
+            system="You write fictional dialogue story scenes for short-form video creators. Your scenes should feel clearly authored, story-forward, and suitable for entertainment content. Never frame output like believable leaked private messages. Always return valid JSON without markdown formatting.",
             messages=[
                 {
                     "role": "user",
@@ -294,18 +379,20 @@ def generate_chat_story(
     genre: str = "drama",
     mood: str = "dramatic",
     num_characters: int = 2,
-    character_names: Optional[List[str]] = None
+    character_names: Optional[List[str]] = None,
+    content_intent: str = "fictional_story",
 ) -> Dict[str, Any]:
     """
-    Generate a chat story conversation using AI.
+    Generate a fictional dialogue story scene using AI.
 
     Args:
-        topic: The story topic/premise
+        topic: The fictional story topic/premise
         num_messages: Number of messages to generate (8-30)
         genre: Story genre (romance, horror, comedy, drama, mystery, thriller, friendship, family)
         mood: Story mood (happy, sad, tense, funny, romantic, scary, dramatic, casual)
         num_characters: Number of characters (2-5)
         character_names: Optional list of character names to use
+        content_intent: Must remain fictional_story for App Store-safe story generation
 
     Returns:
         Dictionary containing:
@@ -320,6 +407,9 @@ def generate_chat_story(
     # Validate inputs
     if not topic or not topic.strip():
         raise ValueError("Topic cannot be empty")
+
+    if content_intent != "fictional_story":
+        raise ValueError("Only fictional_story content is supported")
 
     if not isinstance(num_messages, int) or num_messages < 5 or num_messages > 50:
         raise ValueError("Number of messages must be between 5 and 50")
@@ -348,6 +438,8 @@ def generate_chat_story(
 
     if len(result["messages"]) < 5:
         raise AIServiceError(f"AI generated too few messages: {len(result['messages'])}")
+
+    result["scene_breaks"] = _normalize_scene_breaks(result.get("scene_breaks"), len(result["messages"]))
 
     return result
 

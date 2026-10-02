@@ -16,6 +16,7 @@ class VideoExportService {
         let id: UUID
         let text: String
         let characterID: UUID
+        let order: Int
     }
 
     struct ExportCharacter: Sendable {
@@ -29,6 +30,7 @@ class VideoExportService {
 
     struct ExportConfig: Sendable {
         let messages: [ExportMessage]
+        let conversationSceneBreaks: [SceneBreak]
         let characters: [ExportCharacter]
         let theme: ChatTheme
         let settings: ExportSettings

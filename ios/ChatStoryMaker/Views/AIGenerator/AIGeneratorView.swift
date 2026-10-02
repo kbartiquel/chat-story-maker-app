@@ -44,7 +44,7 @@ struct AIGeneratorView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Create Story")
+            .navigationTitle("Create Story Scene")
             .navigationBarTitleDisplayMode(.large)
             .navigationDestination(isPresented: $viewModel.showingEditor) {
                 if let conversation = viewModel.generatedConversation {
@@ -110,9 +110,14 @@ struct PromptInputView: View {
                 .foregroundColor(coral)
                 .padding(.leading, 4)
 
-            TextField("Ex texts at 2am wanting to get back together, gets rejected", text: $prompt, axis: .vertical)
+            TextField("Two students discover their school library is hiding a portal to another world", text: $prompt, axis: .vertical)
                 .lineLimit(3...6)
                 .font(.system(size: 17))
+
+            Text("Generate a scripted scene for short-form video storytelling.")
+                .font(.system(size: 13))
+                .foregroundColor(.secondary)
+                .padding(.leading, 4)
         }
         .padding(16)
         .background(Color(.systemBackground))

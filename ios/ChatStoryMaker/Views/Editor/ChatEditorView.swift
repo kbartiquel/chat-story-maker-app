@@ -124,8 +124,8 @@ struct ChatEditorView: View {
                 editingMessage = nil
             }
         }
-        .alert("Edit Group Name", isPresented: $showTitleEditor) {
-            TextField("Group Name", text: $editedTitle)
+        .alert("Edit Story Title", isPresented: $showTitleEditor) {
+            TextField("Story Title", text: $editedTitle)
             Button("Cancel", role: .cancel) {}
             Button("Save") {
                 if !editedTitle.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -133,8 +133,8 @@ struct ChatEditorView: View {
                 }
             }
         }
-        .alert("Edit Contact Name", isPresented: $showContactNameEditor) {
-            TextField("Name", text: $editedContactName)
+        .alert("Edit Character Name", isPresented: $showContactNameEditor) {
+            TextField("Character Name", text: $editedContactName)
             Button("Cancel", role: .cancel) {}
             Button("Save") {
                 let newName = editedContactName.trimmingCharacters(in: .whitespaces)
@@ -166,14 +166,14 @@ struct ChatEditorView: View {
                 Image(systemName: "book.fill")
                     .font(.system(size: 14))
                     .foregroundColor(coral)
-                Text("Story Mode")
+                Text("Story Studio")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(coral)
             }
 
             Spacer()
 
-            Text("Editing")
+            Text("Scripting")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
         }
@@ -200,6 +200,32 @@ struct ChatEditorView: View {
 
             Spacer()
 
+            // Center: Tappable story title
+            Button {
+                if conversation.isGroupChat {
+                    editedTitle = conversation.title
+                    showTitleEditor = true
+                } else if let contact = mainContact {
+                    editedContactName = contact.name
+                    showContactNameEditor = true
+                } else {
+                    editedTitle = conversation.title
+                    showTitleEditor = true
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(conversation.isGroupChat ? conversation.title : (mainContact?.name ?? conversation.title))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Image(systemName: "pencil")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
             // Right: Actions
             HStack(spacing: 16) {
                 Button(action: { isReorderMode.toggle() }) {
@@ -219,95 +245,6 @@ struct ChatEditorView: View {
         .background(Color(.systemBackground))
     }
 
-    // MARK: - Message List Header (Avatar + Name)
-
-    private var messageListHeader: some View {
-        Button {
-            if conversation.isGroupChat {
-                editedTitle = conversation.title
-                showTitleEditor = true
-            } else if let contact = mainContact {
-                editedContactName = contact.name
-                showContactNameEditor = true
-            }
-        } label: {
-            VStack(spacing: 4) {
-                if conversation.isGroupChat {
-                    groupAvatarStack
-                } else {
-                    contactAvatar
-                }
-
-                HStack(spacing: 2) {
-                    Text(conversation.isGroupChat ? conversation.title : (mainContact?.name ?? conversation.title))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-        }
-    }
-
-    @ViewBuilder
-    private var contactAvatar: some View {
-        if let contact = mainContact {
-            ZStack {
-                Circle()
-                    .fill(contact.color)
-                    .frame(width: 50, height: 50)
-
-                if let imageData = contact.avatarImageData, let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 50, height: 50)
-                        .clipShape(Circle())
-                } else if let emoji = contact.avatarEmoji, !emoji.isEmpty {
-                    Text(emoji)
-                        .font(.system(size: 24))
-                } else {
-                    Text(String(contact.name.prefix(1)).uppercased())
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(.white)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var groupAvatarStack: some View {
-        let participants = viewModel.characters.filter { !$0.isMe }
-        HStack(spacing: -10) {
-            ForEach(participants.prefix(3)) { participant in
-                ZStack {
-                    Circle()
-                        .fill(participant.color)
-                        .frame(width: 36, height: 36)
-
-                    if let imageData = participant.avatarImageData, let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 36, height: 36)
-                            .clipShape(Circle())
-                    } else if let emoji = participant.avatarEmoji, !emoji.isEmpty {
-                        Text(emoji)
-                            .font(.system(size: 16))
-                    } else {
-                        Text(String(participant.name.prefix(1)).uppercased())
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                }
-                .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
-            }
-        }
-    }
 
     // MARK: - Message List (Normal Mode)
 
@@ -315,10 +252,16 @@ struct ChatEditorView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 8) {
-                    // Avatar + Name header
-                    messageListHeader
+                    ForEach(Array(viewModel.sortedMessages.enumerated()), id: \.element.id) { index, message in
 
-                    ForEach(viewModel.sortedMessages) { message in
+                        // Scene breaks that appear before this message
+                        let breaksHere = conversation.sceneBreaks.filter { $0.insertBeforeOrder == message.order }
+                        ForEach(breaksHere) { sceneBreak in
+                            SceneBreakView(sceneBreak: sceneBreak) {
+                                viewModel.deleteSceneBreak(id: sceneBreak.id)
+                            }
+                        }
+
                         MessageBubbleView(
                             message: message,
                             character: viewModel.getCharacter(for: message),
@@ -343,6 +286,18 @@ struct ChatEditorView: View {
                             }
                         )
                         .id(message.id)
+
+                        // "Add Scene Break" button after each message
+                        AddSceneBreakButton { title in
+                            // Insert before the NEXT message's order (or max+1 if last)
+                            let nextOrder: Int
+                            if index + 1 < viewModel.sortedMessages.count {
+                                nextOrder = viewModel.sortedMessages[index + 1].order
+                            } else {
+                                nextOrder = message.order + 1
+                            }
+                            viewModel.addSceneBreak(title: title, beforeMessageOrder: nextOrder)
+                        }
                     }
                 }
                 .padding()

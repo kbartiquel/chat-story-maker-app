@@ -2,7 +2,7 @@
 # renderer.py
 # Textery Server
 #
-# Video rendering engine - Authentic iMessage style
+# Video rendering engine for fictional story videos
 #
 
 import os
@@ -141,11 +141,12 @@ def get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
 
 
 class VideoRenderer:
-    """Renders chat conversations to video - Authentic iMessage style."""
+    """Renders fictional dialogue story scenes to video."""
 
     def __init__(self, request: RenderRequest):
         self.request = request
         self.messages = request.messages
+        self.scene_breaks = sorted(request.scene_breaks, key=lambda item: item.insert_before_message_index)
         self.characters = {c.id: c for c in request.characters}
         self.theme = THEMES.get(request.theme.value, THEMES["imessage"])
         self.settings = request.settings
@@ -178,11 +179,13 @@ class VideoRenderer:
 
         # Determine if group chat (3+ characters OR explicitly set)
         self._is_group_chat = request.is_group_chat or len(request.characters) > 2
+        self.content_intent = request.content_intent
+        self.story_perspective = getattr(self.settings, "story_perspective", True)
 
         # Layout constants - iMessage style (no status bar)
         self.keyboard_height = int(216 * self.scale)
         self.input_bar_height = int(52 * self.scale)
-        # Both 1:1 and group chat have header with avatar(s)
+        self.story_banner_height = int(34 * self.scale)
         self.header_height = int(85 * self.scale)
         self.bubble_padding = int(16 * self.scale)
         self.avatar_size = int(28 * self.scale)
@@ -206,6 +209,188 @@ class VideoRenderer:
         # Cache for loaded sounds
         self._send_sound_cache = None
         self._receive_sound_cache = None
+
+    def get_scene_breaks_before(self, message_index: int) -> list:
+        """Return scene breaks that should appear before the given message index."""
+        return [item for item in self.scene_breaks if item.insert_before_message_index == message_index]
+
+    def get_story_title(self) -> str:
+        """Get a creator-facing title for the rendered story scene."""
+        title = (self.request.conversation_title or "").strip()
+        if title and title not in ["Chat", "Group Chat"]:
+            return title
+
+        if self._is_group_chat:
+            return "Cast Scene"
+
+        contact = self.get_main_contact()
+        if contact and contact.name:
+            return contact.name
+        return "Story Scene"
+
+    def draw_story_banner(self, draw: ImageDraw.Draw, img: Image.Image, dark_mode: bool):
+        """Draw a small banner that frames the export as created story content."""
+        banner_bg = "#111111" if dark_mode else "#FFF4EF"
+        chip_bg = "#2A2A2D" if dark_mode else "#FDE3D8"
+        chip_text = (255, 255, 255) if dark_mode else hex_to_rgb("#E07B5E")
+        text_color = (255, 255, 255) if dark_mode else (32, 32, 32)
+        secondary = (170, 170, 175) if dark_mode else hex_to_rgb(IMESSAGE_GRAY)
+
+        draw.rectangle([(0, 0), (self.phone_width, self.story_banner_height)], fill=hex_to_rgb(banner_bg))
+
+        chip_x = int(12 * self.scale)
+        chip_y = int(7 * self.scale)
+        chip_h = int(20 * self.scale)
+        radius = int(10 * self.scale)
+        chip_font = get_font(int(10 * self.scale), bold=True)
+        chip_label = "FICTIONAL STORY"
+        chip_text_bbox = draw.textbbox((0, 0), chip_label, font=chip_font)
+        chip_w = (chip_text_bbox[2] - chip_text_bbox[0]) + int(20 * self.scale)
+        draw.rounded_rectangle(
+            [(chip_x, chip_y), (chip_x + chip_w, chip_y + chip_h)],
+            radius=radius,
+            fill=hex_to_rgb(chip_bg)
+        )
+        draw.text((chip_x + int(10 * self.scale), chip_y + int(4 * self.scale)), chip_label, fill=chip_text, font=chip_font)
+
+        title_font = get_font(int(11 * self.scale), bold=True)
+        title_text = self.get_story_title()
+        title_bbox = draw.textbbox((0, 0), title_text, font=title_font)
+        title_width = title_bbox[2] - title_bbox[0]
+        draw.text(((self.phone_width - title_width) // 2, int(10 * self.scale)), title_text, fill=text_color, font=title_font)
+
+        subtitle_font = get_font(int(10 * self.scale))
+        subtitle = "Story video"
+        subtitle_bbox = draw.textbbox((0, 0), subtitle, font=subtitle_font)
+        subtitle_x = self.phone_width - (subtitle_bbox[2] - subtitle_bbox[0]) - int(12 * self.scale)
+        draw.text((subtitle_x, int(10 * self.scale)), subtitle, fill=secondary, font=subtitle_font)
+
+    def render_title_card(self, title: str, subtitle: str, accent_text: str) -> Image.Image:
+        """Render a story-first intro/outro card."""
+        dark_mode = self.settings.dark_mode
+        bg = Image.new("RGB", (self.render_width, self.render_height), hex_to_rgb("#141416" if dark_mode else "#FFF7F2"))
+        draw = ImageDraw.Draw(bg)
+
+        # Soft spotlight for a more editorial look.
+        glow = Image.new("RGBA", (self.render_width, self.render_height), (0, 0, 0, 0))
+        glow_draw = ImageDraw.Draw(glow)
+        glow_color = (224, 123, 94, 70) if not dark_mode else (224, 123, 94, 45)
+        glow_draw.ellipse(
+            [
+                (int(self.render_width * 0.12), int(self.render_height * 0.18)),
+                (int(self.render_width * 0.88), int(self.render_height * 0.72)),
+            ],
+            fill=glow_color
+        )
+        glow = glow.filter(ImageFilter.GaussianBlur(radius=int(60 * max(self.scale, 1))))
+        bg = Image.alpha_composite(bg.convert("RGBA"), glow).convert("RGB")
+        draw = ImageDraw.Draw(bg)
+
+        text_color = (255, 255, 255) if dark_mode else (17, 17, 17)
+        secondary = (210, 210, 215) if dark_mode else (86, 86, 92)
+        accent_fill = (253, 227, 216) if not dark_mode else (54, 38, 33)
+        accent_color = hex_to_rgb("#E07B5E")
+
+        chip_font = get_font(int(18 * self.scale), bold=True)
+        title_font = get_font(int(40 * self.scale), bold=True)
+        subtitle_font = get_font(int(22 * self.scale))
+
+        card_width = int(self.render_width * 0.72)
+        card_x = (self.render_width - card_width) // 2
+        chip_y = int(self.render_height * 0.22)
+        chip_h = int(38 * self.scale)
+        draw.rounded_rectangle(
+            [(card_x, chip_y), (card_x + int(220 * self.scale), chip_y + chip_h)],
+            radius=int(19 * self.scale),
+            fill=accent_fill
+        )
+        draw.text((card_x + int(18 * self.scale), chip_y + int(9 * self.scale)), accent_text, fill=accent_color, font=chip_font)
+
+        title_y = chip_y + int(80 * self.scale)
+        draw.multiline_text(
+            (card_x, title_y),
+            title,
+            fill=text_color,
+            font=title_font,
+            spacing=int(8 * self.scale)
+        )
+
+        subtitle_y = title_y + int(120 * self.scale)
+        draw.multiline_text(
+            (card_x, subtitle_y),
+            subtitle,
+            fill=secondary,
+            font=subtitle_font,
+            spacing=int(6 * self.scale)
+        )
+
+        footer_font = get_font(int(18 * self.scale), bold=True)
+        footer = "Created with Textery"
+        footer_bbox = draw.textbbox((0, 0), footer, font=footer_font)
+        footer_x = (self.render_width - (footer_bbox[2] - footer_bbox[0])) // 2
+        footer_y = int(self.render_height * 0.78)
+        draw.text((footer_x, footer_y), footer, fill=accent_color, font=footer_font)
+
+        return bg
+
+    def render_scene_break_card(self, title: str, subtitle: Optional[str] = None) -> Image.Image:
+        """Render a minimal scene break card — just the big title, centered."""
+        dark_mode = self.settings.dark_mode
+        bg = Image.new("RGB", (self.render_width, self.render_height), hex_to_rgb("#141416" if dark_mode else "#FFF7F2"))
+        draw = ImageDraw.Draw(bg)
+
+        # Soft coral glow
+        glow = Image.new("RGBA", (self.render_width, self.render_height), (0, 0, 0, 0))
+        glow_draw = ImageDraw.Draw(glow)
+        glow_color = (224, 123, 94, 55) if not dark_mode else (224, 123, 94, 35)
+        glow_draw.ellipse(
+            [
+                (int(self.render_width * 0.15), int(self.render_height * 0.25)),
+                (int(self.render_width * 0.85), int(self.render_height * 0.75)),
+            ],
+            fill=glow_color
+        )
+        glow = glow.filter(ImageFilter.GaussianBlur(radius=int(80 * max(self.scale, 1))))
+        bg = Image.alpha_composite(bg.convert("RGBA"), glow).convert("RGB")
+        draw = ImageDraw.Draw(bg)
+
+        text_color = (255, 255, 255) if dark_mode else (17, 17, 17)
+        title_font = get_font(int(52 * self.scale), bold=True)
+
+        # Wrap title to fit within 80% of width
+        max_width = int(self.render_width * 0.80)
+        words = title.split()
+        lines = []
+        current = ""
+        for word in words:
+            test = (current + " " + word).strip()
+            bbox = draw.textbbox((0, 0), test, font=title_font)
+            if bbox[2] - bbox[0] <= max_width:
+                current = test
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+
+        wrapped = "\n".join(lines)
+        bbox = draw.textbbox((0, 0), wrapped, font=title_font, spacing=int(10 * self.scale))
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+        x = (self.render_width - text_w) // 2
+        y = (self.render_height - text_h) // 2
+
+        draw.multiline_text(
+            (x, y),
+            wrapped,
+            fill=text_color,
+            font=title_font,
+            spacing=int(10 * self.scale),
+            align="center"
+        )
+
+        return bg
 
     def get_character(self, character_id: str) -> Optional[Character]:
         """Get character by ID."""
@@ -428,12 +613,26 @@ class VideoRenderer:
             if frame_count % 30 == 0:
                 gc.collect()
 
+        if self.settings.include_intro_card:
+            intro_frame = self.render_title_card(
+                title=self.get_story_title(),
+                subtitle="A fictional dialogue story scene\nmade for short-form video.",
+                accent_text="FICTIONAL STORY"
+            )
+            write_frame(intro_frame, int(FPS * 1.5))
+            if progress_callback:
+                progress_callback(0.08)
+
         # Process each message
         for index, message in enumerate(self.messages):
+            for scene_break in self.get_scene_breaks_before(index):
+                break_frame = self.render_scene_break_card(scene_break.title, scene_break.subtitle)
+                write_frame(break_frame, int(FPS * 1.1))
+
             character = self.get_character(message.character_id)
             is_me = character.is_me if character else True
 
-            message_base_progress = 0.05 + (index / total_messages * 0.75)
+            message_base_progress = 0.10 + (index / total_messages * 0.70)
             message_progress_range = 0.75 / total_messages
 
             if is_me:
@@ -443,12 +642,21 @@ class VideoRenderer:
                     partial_text = message.text[:char_index]
                     current_char = message.text[char_index - 1].lower()
 
+                    frame_messages = visible_messages
+                    keyboard_typing_text = partial_text
+                    highlighted_key = current_char
+
+                    if self.story_perspective:
+                        frame_messages = visible_messages + [(message, partial_text, character)]
+                        keyboard_typing_text = None
+                        highlighted_key = None
+
                     frame = self.render_frame(
-                        visible_messages=visible_messages,
+                        visible_messages=frame_messages,
                         show_typing_indicator=False,
                         typing_character=None,
-                        keyboard_typing_text=partial_text,
-                        highlighted_key=current_char
+                        keyboard_typing_text=keyboard_typing_text,
+                        highlighted_key=highlighted_key
                     )
                     write_frame(frame, self.frames_per_char)
 
@@ -458,10 +666,10 @@ class VideoRenderer:
 
                 # Brief pause showing full text in input
                 frame = self.render_frame(
-                    visible_messages=visible_messages,
+                    visible_messages=visible_messages if not self.story_perspective else visible_messages + [(message, message.text, character)],
                     show_typing_indicator=False,
                     typing_character=None,
-                    keyboard_typing_text=message.text
+                    keyboard_typing_text=None if self.story_perspective else message.text
                 )
                 write_frame(frame, 10)
 
@@ -530,6 +738,14 @@ class VideoRenderer:
         )
         write_frame(frame, 60)
 
+        if self.settings.include_outro_card:
+            outro_frame = self.render_title_card(
+                title="Story scene complete",
+                subtitle="Exported as creator-ready fictional video content.",
+                accent_text="TEXTERY"
+            )
+            write_frame(outro_frame, int(FPS * 1.0))
+
         if progress_callback:
             progress_callback(0.85)
 
@@ -586,21 +802,23 @@ class VideoRenderer:
         img = Image.new("RGB", (self.phone_width, self.phone_height), hex_to_rgb(bg_color))
         draw = ImageDraw.Draw(img)
 
-        # Draw simplified iMessage header (centered timestamp)
+        self.draw_story_banner(draw, img, dark_mode)
         self.draw_header(draw, img, dark_mode)
 
         # Draw keyboard if enabled
-        if self.settings.show_keyboard:
+        should_show_keyboard = self.settings.show_keyboard and not self.story_perspective
+
+        if should_show_keyboard:
             self.draw_keyboard(draw, img, dark_mode, keyboard_typing_text, highlighted_key)
 
         # Calculate message area (relative to phone frame)
-        message_area_top = self.header_height + int(10 * self.scale)
-        if self.settings.show_keyboard:
+        message_area_top = self.story_banner_height + self.header_height + int(10 * self.scale)
+        if should_show_keyboard:
             keyboard_y = self.phone_height - self.keyboard_height
             input_bar_y = keyboard_y - self.input_bar_height
             message_area_bottom = input_bar_y - int(10 * self.scale)
         else:
-            message_area_bottom = self.phone_height - int(20 * self.scale)
+            message_area_bottom = self.phone_height - int(24 * self.scale)
 
         # Calculate message heights
         message_heights = []
@@ -659,78 +877,65 @@ class VideoRenderer:
         return frame
 
     def draw_header(self, draw: ImageDraw.Draw, img: Image.Image, dark_mode: bool):
-        """Draw header - 1:1 has avatar/name/video icon, group chat has timestamp."""
+        """Draw a story-first header that avoids mimicking a real messaging app."""
         header_bg = "#000000" if dark_mode else "#FFFFFF"
-        blue_color = hex_to_rgb("#007AFF")
         gray_color = hex_to_rgb(IMESSAGE_GRAY)
         text_color = (255, 255, 255) if dark_mode else (0, 0, 0)
 
         # Header background
-        draw.rectangle([(0, 0), (self.phone_width, self.header_height)], fill=hex_to_rgb(header_bg))
+        draw.rectangle(
+            [(0, self.story_banner_height), (self.phone_width, self.story_banner_height + self.header_height)],
+            fill=hex_to_rgb(header_bg)
+        )
 
         if not self._is_group_chat:
-            # === 1:1 CHAT HEADER ===
-            # Layout: [Back] [Avatar + Name] [Video] | separator | iMessage + Time
-
             contact = self.get_main_contact()
             contact_avatar_size = int(40 * self.scale)
 
-            # Avatar centered at top
             avatar_x = (self.phone_width - contact_avatar_size) // 2
-            avatar_y = int(8 * self.scale)
+            avatar_y = self.story_banner_height + int(8 * self.scale)
 
             if contact:
                 self.draw_avatar(img, draw, contact, avatar_x, avatar_y, contact_avatar_size)
-                contact_name = contact.name
+                contact_name = self.get_story_title()
             else:
                 draw.ellipse(
                     [(avatar_x, avatar_y), (avatar_x + contact_avatar_size, avatar_y + contact_avatar_size)],
                     fill=hex_to_rgb("#C7C7CC")
                 )
-                contact_name = self.request.conversation_title
+                contact_name = self.get_story_title()
 
-            # Back arrow and video icon on the same row, aligned with avatar center
-            icon_row_y = avatar_y + contact_avatar_size // 2  # Center of avatar
-
-            # Debug line at avatar center
-            debug_line_y = icon_row_y
-
-            # Back arrow - centered on debug line (adjust for font baseline)
-            arrow_font_size = int(38 * self.scale)
-            arrow_font = get_font(arrow_font_size)
-            arrow_x = int(10 * self.scale)
-            arrow_y = debug_line_y - arrow_font_size // 2 - int(8 * self.scale)  # Move up to center
-            draw.text((arrow_x, arrow_y), "‹", fill=blue_color, font=arrow_font)
-
-            # Name with chevron below avatar
             name_font = get_font(int(13 * self.scale))
-            name_text = f"{contact_name} ›"
+            name_text = contact_name
             bbox = draw.textbbox((0, 0), name_text, font=name_font)
             name_width = bbox[2] - bbox[0]
             name_x = (self.phone_width - name_width) // 2
             name_y = avatar_y + contact_avatar_size + int(2 * self.scale)
             draw.text((name_x, name_y), name_text, fill=text_color, font=name_font)
 
-            # Separator line - below name
-            separator_y = name_y + int(20 * self.scale)
+            subtitle_font = get_font(int(10 * self.scale))
+            subtitle = "Two-character scene"
+            sub_bbox = draw.textbbox((0, 0), subtitle, font=subtitle_font)
+            draw.text(
+                ((self.phone_width - (sub_bbox[2] - sub_bbox[0])) // 2, name_y + int(15 * self.scale)),
+                subtitle,
+                fill=gray_color,
+                font=subtitle_font
+            )
+
+            separator_y = self.story_banner_height + self.header_height - int(1 * self.scale)
             draw.line(
                 [(0, separator_y), (self.phone_width, separator_y)],
                 fill=hex_to_rgb(IMESSAGE_SEPARATOR),
                 width=1
             )
 
-
         else:
-            # === GROUP CHAT HEADER ===
-            # Layout: [Back] [Stacked Avatars] | Group Name (optional) | X People | separator
-
             group_avatar_size = int(32 * self.scale)  # Slightly smaller for group
 
-            # Stacked avatars centered at top
-            avatar_y = int(8 * self.scale)
+            avatar_y = self.story_banner_height + int(8 * self.scale)
             center_x = self.phone_width // 2
 
-            # Draw stacked avatars
             self.draw_stacked_avatars(
                 img, draw,
                 self.request.characters,
@@ -739,42 +944,24 @@ class VideoRenderer:
                 max_display=4
             )
 
-            # Back arrow on the left (aligned with avatar center)
-            icon_row_y = avatar_y + group_avatar_size // 2
-            arrow_font_size = int(38 * self.scale)
-            arrow_font = get_font(arrow_font_size)
-            arrow_x = int(10 * self.scale)
-            arrow_y = icon_row_y - arrow_font_size // 2 - int(8 * self.scale)
-            draw.text((arrow_x, arrow_y), "‹", fill=blue_color, font=arrow_font)
-
-            # Position tracker for text below avatars
             current_y = avatar_y + group_avatar_size + int(2 * self.scale)
+            group_name = self.get_story_title()
+            name_font = get_font(int(13 * self.scale), bold=True)
+            bbox = draw.textbbox((0, 0), group_name, font=name_font)
+            name_width = bbox[2] - bbox[0]
+            name_x = (self.phone_width - name_width) // 2
+            draw.text((name_x, current_y), group_name, fill=text_color, font=name_font)
+            current_y += int(16 * self.scale)
 
-            # Check if there's a group name (conversation_title that's not default)
-            group_name = self.request.conversation_title
-            has_group_name = group_name and group_name not in ["Chat", "Group Chat", ""]
-
-            if has_group_name:
-                # Group name (bold, black text)
-                name_font = get_font(int(13 * self.scale), bold=True)
-                bbox = draw.textbbox((0, 0), group_name, font=name_font)
-                name_width = bbox[2] - bbox[0]
-                name_x = (self.phone_width - name_width) // 2
-                draw.text((name_x, current_y), group_name, fill=text_color, font=name_font)
-                current_y += int(16 * self.scale)
-
-            # "X People ›" text (gray if group name exists, otherwise main text)
             num_people = len(self.request.characters)
             people_font = get_font(int(12 * self.scale))
-            people_text = f"{num_people} People ›"
+            people_text = f"{num_people} characters in scene"
             bbox = draw.textbbox((0, 0), people_text, font=people_font)
             people_width = bbox[2] - bbox[0]
             people_x = (self.phone_width - people_width) // 2
-            people_color = gray_color if has_group_name else text_color
-            draw.text((people_x, current_y), people_text, fill=people_color, font=people_font)
+            draw.text((people_x, current_y), people_text, fill=gray_color, font=people_font)
 
-            # Separator line - below people text
-            separator_y = current_y + int(18 * self.scale)
+            separator_y = self.story_banner_height + self.header_height - int(1 * self.scale)
             draw.line(
                 [(0, separator_y), (self.phone_width, separator_y)],
                 fill=hex_to_rgb(IMESSAGE_SEPARATOR),

@@ -20,16 +20,20 @@ class ServerExportService {
 
     struct RenderRequest: Codable {
         let messages: [MessageData]
+        let sceneBreaks: [SceneBreakData]
         let characters: [CharacterData]
         let theme: String
         let settings: SettingsData
         let conversationTitle: String
         let isGroupChat: Bool
+        let contentIntent: String
 
         enum CodingKeys: String, CodingKey {
             case messages, characters, theme, settings
+            case sceneBreaks = "scene_breaks"
             case conversationTitle = "conversation_title"
             case isGroupChat = "is_group_chat"
+            case contentIntent = "content_intent"
         }
     }
 
@@ -61,6 +65,17 @@ class ServerExportService {
         }
     }
 
+    struct SceneBreakData: Codable {
+        let title: String
+        let subtitle: String?
+        let insertBeforeMessageIndex: Int
+
+        enum CodingKeys: String, CodingKey {
+            case title, subtitle
+            case insertBeforeMessageIndex = "insert_before_message_index"
+        }
+    }
+
     struct SettingsData: Codable {
         let exportType: String
         let format: String
@@ -69,6 +84,9 @@ class ServerExportService {
         let showTypingIndicator: Bool
         let enableSounds: Bool
         let darkMode: Bool
+        let includeIntroCard: Bool
+        let includeOutroCard: Bool
+        let storyPerspective: Bool
 
         enum CodingKeys: String, CodingKey {
             case exportType = "export_type"
@@ -78,6 +96,9 @@ class ServerExportService {
             case showTypingIndicator = "show_typing_indicator"
             case enableSounds = "enable_sounds"
             case darkMode = "dark_mode"
+            case includeIntroCard = "include_intro_card"
+            case includeOutroCard = "include_outro_card"
+            case storyPerspective = "story_perspective"
         }
     }
 
@@ -139,6 +160,17 @@ class ServerExportService {
                     characterId: msg.characterID.uuidString
                 )
             },
+            sceneBreaks: config.conversationSceneBreaks.compactMap { sceneBreak in
+                // Convert message order value to positional index in the sorted messages array
+                guard let index = config.messages.firstIndex(where: { $0.order == sceneBreak.insertBeforeOrder }) else {
+                    return nil
+                }
+                return SceneBreakData(
+                    title: sceneBreak.title,
+                    subtitle: sceneBreak.subtitle,
+                    insertBeforeMessageIndex: index
+                )
+            },
             characters: config.characters.map { char in
                 // Convert avatar image data to base64 (compress first to reduce size)
                 var avatarBase64: String? = nil
@@ -173,10 +205,14 @@ class ServerExportService {
                 showKeyboard: config.settings.showKeyboard,
                 showTypingIndicator: config.settings.showTypingIndicator,
                 enableSounds: config.settings.enableSounds,
-                darkMode: config.settings.darkMode
+                darkMode: config.settings.darkMode,
+                includeIntroCard: config.settings.includeIntroCard,
+                includeOutroCard: config.settings.includeOutroCard,
+                storyPerspective: config.settings.storyPerspective
             ),
             conversationTitle: config.conversationTitle,
-            isGroupChat: config.isGroupChat
+            isGroupChat: config.isGroupChat,
+            contentIntent: "fictional_story"
         )
 
         // Start render job

@@ -26,7 +26,7 @@ struct NewConversationView: View {
                         HStack {
                             Image(systemName: isGroupChat ? "person.3.fill" : "person.fill")
                                 .foregroundColor(.accentColor)
-                            Text(isGroupChat ? "Group Chat" : "1-on-1 Chat")
+                            Text(isGroupChat ? "Cast Scene" : "Two-Character Scene")
                         }
                     }
                 }
@@ -34,7 +34,7 @@ struct NewConversationView: View {
                 Section {
                     if isGroupChat {
                         Label {
-                            Text("Avatars will appear next to messages from other participants")
+                            Text("Build a larger cast scene with visible character identities.")
                         } icon: {
                             Image(systemName: "info.circle")
                                 .foregroundColor(.accentColor)
@@ -42,7 +42,7 @@ struct NewConversationView: View {
                         .font(.caption)
                     } else {
                         Label {
-                            Text("Simple two-person conversation with contact info in header")
+                            Text("Write a focused scene between two characters.")
                         } icon: {
                             Image(systemName: "info.circle")
                                 .foregroundColor(.accentColor)

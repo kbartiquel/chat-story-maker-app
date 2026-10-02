@@ -52,9 +52,9 @@ struct MessageBubbleView: View {
         isGroupChat && !isMe
     }
 
-    // Show sender name only in group chats for non-sender messages
+    // Always show name beside every bubble in the editor
     private var showSenderName: Bool {
-        isGroupChat && !isMe
+        character?.name.isEmpty == false
     }
 
     var body: some View {

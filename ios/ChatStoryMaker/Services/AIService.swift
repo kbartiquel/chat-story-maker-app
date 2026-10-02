@@ -100,13 +100,15 @@ class AIService {
         let mood: String
         let num_characters: Int
         let character_names: [String]?
+        let content_intent: String
     }
 
     private struct ServerGenerateResponse: Codable {
         let title: String
-        let group_name: String?  // Realistic group chat name for groups (3+ characters)
+        let group_name: String?  // Story-forward cast title for groups (3+ characters)
         let characters: [ServerCharacter]
         let messages: [ServerMessage]
+        let scene_breaks: [ServerSceneBreak]?
     }
 
     private struct ServerCharacter: Codable {
@@ -121,6 +123,12 @@ class AIService {
         let id: String
         let character_id: String
         let text: String
+    }
+
+    private struct ServerSceneBreak: Codable {
+        let title: String
+        let subtitle: String?
+        let insert_before_message_index: Int
     }
 
     // MARK: - Public Response Models
@@ -141,9 +149,10 @@ class AIService {
 
     struct GeneratedStory {
         let title: String
-        let groupName: String?  // Realistic group chat name for groups (3+ characters)
+        let groupName: String?  // Story-forward cast title for groups (3+ characters)
         let characters: [GeneratedCharacter]
         let messages: [GeneratedMessage]
+        let sceneBreaks: [SceneBreak]
     }
 
     // MARK: - Generate Method
@@ -159,7 +168,8 @@ class AIService {
             genre: request.genre,
             mood: request.mood,
             num_characters: request.numCharacters,
-            character_names: nil
+            character_names: nil,
+            content_intent: "fictional_story"
         )
 
         var urlRequest = URLRequest(url: url)
@@ -209,11 +219,20 @@ class AIService {
             )
         }
 
+        let sceneBreaks = (serverResponse.scene_breaks ?? []).map { item in
+            SceneBreak(
+                title: item.title,
+                subtitle: item.subtitle,
+                insertBeforeOrder: item.insert_before_message_index
+            )
+        }
+
         return GeneratedStory(
             title: serverResponse.title,
             groupName: serverResponse.group_name,
             characters: characters,
-            messages: messages
+            messages: messages,
+            sceneBreaks: sceneBreaks
         )
     }
 }

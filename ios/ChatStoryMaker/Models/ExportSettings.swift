@@ -15,6 +15,9 @@ struct ExportSettings {
     var showTypingIndicator: Bool = true
     var enableSounds: Bool = true
     var darkMode: Bool = false
+    var includeIntroCard: Bool = true
+    var includeOutroCard: Bool = true
+    var storyPerspective: Bool = true
 
     // Render mode - always use server/cloud for better quality and emoji support
     var renderMode: RenderMode = .server

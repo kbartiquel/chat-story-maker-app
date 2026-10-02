@@ -11,7 +11,7 @@
 - [x] Free trial toggle removed (App Store compliance)
 - [x] Yearly subscription plan added to paywall
 - [x] StoreKit configuration file for simulator testing
-- [x] Server deployed to Render.com (Standard tier - 2GB RAM)
+- [x] Server deployed to Google Cloud Run in the dedicated `textery` project
 - [x] iOS app updated with production URL
 - [x] Memory-efficient video renderer (streams to ffmpeg)
 - [x] Render queue limiter (max 2 concurrent renders)
@@ -48,8 +48,8 @@
 - App icon for all sizes
 - Screenshots for App Store
 - App description and keywords
-- Privacy policy URL (https://kimbytes.com/textery/privacy.html)
-- Terms of service URL (https://kimbytes.com/textery/terms.html)
+- Privacy policy URL ([https://textery-6e482.web.app/privacy](https://textery-6e482.web.app/privacy))
+- Terms of service URL ([https://textery-6e482.web.app/terms](https://textery-6e482.web.app/terms))
 
 ### 7. Testing
 - [ ] Test full AI generation flow end-to-end
@@ -73,11 +73,6 @@
 
 ### Server
 - Production: `https://textery-api-7uam4panra-uc.a.run.app`
-- Tier: Standard ($25/month, 2GB RAM)
+- Platform: Google Cloud Run (`textery` project, account `kimoytech@gmail.com`)
 - Queue: Max 2 concurrent renders
 - Local: `cd server && uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
-
-### Render Settings
-- Python: 3.11 (set via PYTHON_VERSION env var)
-- Start Command: `server/ $ uvicorn main:app --host 0.0.0.0 --port $PORT`
-- Root Directory: `server/`

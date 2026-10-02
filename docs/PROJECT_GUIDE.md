@@ -18,6 +18,11 @@ The app is positioned as a fictional storytelling tool, not a real messaging sim
 - Entertainment and creative storytelling
 - Video export only
 
+### Current Strategic Direction
+- The App Store issue is now concept-level, not just metadata-level.
+- Textery should pivot away from any framing that reads as "create fake conversations."
+- The recommended direction is a fictional dialogue story creator for short-form video content.
+
 ### Things to Avoid in Product or App Store Copy
 - "fake chats"
 - "looks completely real"
@@ -135,6 +140,7 @@ The app is positioned as a fictional storytelling tool, not a real messaging sim
 ### App Review / Planning
 - [appstore-rejection-reply.md](/Users/kbartiquel/Documents/PROJECTS/ChatStoryMaker/appstore-rejection-reply.md)
 - [textery-appstore-fix-implementation-plan.md](/Users/kbartiquel/Documents/PROJECTS/ChatStoryMaker/textery-appstore-fix-implementation-plan.md)
+- [APP_STORE_PIVOT_PLAN.md](/Users/kbartiquel/Documents/PROJECTS/ChatStoryMaker/docs/APP_STORE_PIVOT_PLAN.md)
 
 ## Milestones And Timeline
 
@@ -154,22 +160,23 @@ The app is positioned as a fictional storytelling tool, not a real messaging sim
 - Cloud Run API moved onto the user's own Google Cloud project
 
 ### Current Phase
-- App Store submission hardening
+- App Store concept pivot and submission hardening
 - documentation cleanup
 - final product polish
 - admin/dashboard infrastructure upgrade
 
 ### Current Priorities
-1. Final App Store submission prep
-2. Firestore migration for admin analytics durability
-3. App icon and screenshots
-4. End-to-end testing
-5. Xcode/project naming cleanup from `ChatStoryMaker` to `Textery`
+1. Product pivot for App Store compliance using `docs/APP_STORE_PIVOT_PLAN.md`
+2. Export presentation changes to make videos feel like authored story videos instead of first-person phone captures
+3. Refresh screenshots and App Store metadata around the new positioning
+4. Firestore migration for admin analytics durability
+5. End-to-end testing
 
 ## App Store Review Context
 
 ### Relevant Review Topic
 - Guideline 1.1.6 objectionable or misleading content risk
+- Latest App Review response indicates Apple rejects the current concept if it is understood as allowing users to create fake conversations.
 
 ### Changes Already Made
 - fictional-content disclaimer on first launch
@@ -196,6 +203,13 @@ The app is positioned as a fictional storytelling tool, not a real messaging sim
 - Admin now follows the richer Quiz Maker / SocMedAI direction with date filters, funnels, user filters, timelines, and RevenueCat-backed revenue visibility.
 - Cost settings and cost reporting were intentionally removed from the admin/dashboard direction.
 - Extra custom paywall/version toggles were removed from server settings and admin because Textery only ships one paywall.
+- A durable pivot plan now exists at `docs/APP_STORE_PIVOT_PLAN.md` and should be treated as the main recovery path for App Store approval.
+- The active pivot now includes:
+  - story-first app UI wording
+  - a story-writing composer instead of a live chat bar
+  - AI-generated scene-break titles
+  - renderer support for interstitial scene cards
+  - export movement away from first-person keyboard-style storytelling
 
 ## Suggested Docs Convention
 
@@ -209,6 +223,6 @@ Store durable project docs in `docs/`:
 
 ## Next Recommended Steps
 
-1. Create `docs/APP_REVIEW.md` for App Store notes, reviewer replies, and submission checklists.
-2. Reconcile older docs like `AGENTS.md` and `TODO.md` with the current video-only product state.
-3. Finish final App Store Connect metadata review before resubmitting.
+1. Execute the product and export pivot in `docs/APP_STORE_PIVOT_PLAN.md`.
+2. Create `docs/APP_REVIEW.md` for App Store notes, reviewer replies, and submission checklists.
+3. Reconcile older docs like `AGENTS.md` and `TODO.md` with the current pivot direction.

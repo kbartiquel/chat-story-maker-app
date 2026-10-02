@@ -33,6 +33,7 @@ final class ScreenshotMockDataService {
         let isGroupChat: Bool
         let characters: [(name: String, colorHex: String, isMe: Bool)]
         let messages: [MessageSeed]
+        let sceneBreaks: [(title: String, subtitle: String?, insertBeforeOrder: Int)]
     }
 
     private let folderSeeds: [FolderSeed] = [
@@ -69,6 +70,10 @@ final class ScreenshotMockDataService {
                 MessageSeed(senderIndex: 1, text: "captain the moon is literally glowing outside", minutesOffset: 37),
                 MessageSeed(senderIndex: 0, text: "okay now im running", minutesOffset: 40),
                 MessageSeed(senderIndex: 1, text: "good because the AI just called me witness number one", minutesOffset: 44)
+            ],
+            sceneBreaks: [
+                ("Docking Alarm", "The station starts acting strange", 4),
+                ("Minutes Later", "The mystery gets worse", 11)
             ]
         ),
         ConversationSeed(
@@ -83,7 +88,18 @@ final class ScreenshotMockDataService {
             messages: [
                 MessageSeed(senderIndex: 1, text: "the baby dragon followed us into detention", minutesOffset: 0),
                 MessageSeed(senderIndex: 0, text: "be honest did you feed it cursed glitter again", minutesOffset: 1),
-                MessageSeed(senderIndex: 1, text: "only a little", minutesOffset: 4)
+                MessageSeed(senderIndex: 1, text: "only a little", minutesOffset: 4),
+                MessageSeed(senderIndex: 0, text: "its chewing through professor vale's chalk", minutesOffset: 7),
+                MessageSeed(senderIndex: 1, text: "good maybe then we wont have a quiz on fireproof runes", minutesOffset: 10),
+                MessageSeed(senderIndex: 0, text: "lyra that is not a study strategy", minutesOffset: 13),
+                MessageSeed(senderIndex: 1, text: "it just sneezed sparks into the trophy case", minutesOffset: 15),
+                MessageSeed(senderIndex: 0, text: "please tell me the trophy case was empty", minutesOffset: 18),
+                MessageSeed(senderIndex: 1, text: "define empty", minutesOffset: 20),
+                MessageSeed(senderIndex: 0, text: "we are never graduating this academy", minutesOffset: 23)
+            ],
+            sceneBreaks: [
+                ("Detention Begins", "The dragon makes itself comfortable", 3),
+                ("A Few Sparks Later", nil, 7)
             ]
         ),
         ConversationSeed(
@@ -102,7 +118,8 @@ final class ScreenshotMockDataService {
                 MessageSeed(senderIndex: 2, text: "to where this time", minutesOffset: 1),
                 MessageSeed(senderIndex: 3, text: "somewhere windy with three suns", minutesOffset: 3),
                 MessageSeed(senderIndex: 0, text: "nobody get on the wrong bus until i arrive", minutesOffset: 5)
-            ]
+            ],
+            sceneBreaks: []
         ),
         ConversationSeed(
             title: "The Missing Map",
@@ -122,6 +139,9 @@ final class ScreenshotMockDataService {
                 MessageSeed(senderIndex: 0, text: "you always pick the more dangerous option", minutesOffset: 12),
                 MessageSeed(senderIndex: 1, text: "because its usually more fun", minutesOffset: 15),
                 MessageSeed(senderIndex: 0, text: "meet me at the lighthouse in twenty", minutesOffset: 18)
+            ],
+            sceneBreaks: [
+                ("The Discovery", nil, 3)
             ]
         ),
         ConversationSeed(
@@ -139,7 +159,8 @@ final class ScreenshotMockDataService {
                 MessageSeed(senderIndex: 1, text: "who untied the cloud whales", minutesOffset: 0),
                 MessageSeed(senderIndex: 2, text: "define untied", minutesOffset: 1),
                 MessageSeed(senderIndex: 3, text: "they are drifting toward the royal parade", minutesOffset: 3)
-            ]
+            ],
+            sceneBreaks: []
         ),
         ConversationSeed(
             title: "Goblin Cafe Shift",
@@ -154,7 +175,8 @@ final class ScreenshotMockDataService {
                 MessageSeed(senderIndex: 1, text: "the goblins tipped in shiny buttons again", minutesOffset: 0),
                 MessageSeed(senderIndex: 0, text: "are any of them legal currency this time", minutesOffset: 2),
                 MessageSeed(senderIndex: 1, text: "one of them sings when you shake it", minutesOffset: 4)
-            ]
+            ],
+            sceneBreaks: []
         ),
         ConversationSeed(
             title: "Time Travel Field Trip",
@@ -185,6 +207,10 @@ final class ScreenshotMockDataService {
                 MessageSeed(senderIndex: 3, text: "if i disappear from the present tell my future self im iconic", minutesOffset: 35),
                 MessageSeed(senderIndex: 0, text: "opening a return portal now", minutesOffset: 38),
                 MessageSeed(senderIndex: 1, text: "hurry the mayor wants a photo", minutesOffset: 41)
+            ],
+            sceneBreaks: [
+                ("1986 Arrival", "The timeline gets messy fast", 5),
+                ("Meanwhile", "Kevin becomes locally famous", 12)
             ]
         ),
         ConversationSeed(
@@ -200,10 +226,11 @@ final class ScreenshotMockDataService {
                 MessageSeed(senderIndex: 1, text: "new rule your alien roommate cannot hatch eggs in the sink", minutesOffset: 0),
                 MessageSeed(senderIndex: 0, text: "that feels weirdly targeted", minutesOffset: 2),
                 MessageSeed(senderIndex: 1, text: "because it is", minutesOffset: 5)
-            ]
+            ],
+            sceneBreaks: []
         ),
         ConversationSeed(
-            title: "Roommate Rules",
+            title: "Haunted Theater Notes",
             folderName: nil,
             updatedHoursAgo: 52,
             isGroupChat: false,
@@ -212,9 +239,15 @@ final class ScreenshotMockDataService {
                 ("Kai", "#00C7BE", false)
             ],
             messages: [
-                MessageSeed(senderIndex: 1, text: "new rule: no blender after midnight", minutesOffset: 0),
-                MessageSeed(senderIndex: 0, text: "counter rule: no karaoke before coffee", minutesOffset: 2),
-                MessageSeed(senderIndex: 1, text: "absolutely fair", minutesOffset: 6)
+                MessageSeed(senderIndex: 1, text: "the theater curtains moved again and there is no wind", minutesOffset: 0),
+                MessageSeed(senderIndex: 0, text: "did the ghost at least wait until rehearsal ended", minutesOffset: 2),
+                MessageSeed(senderIndex: 1, text: "no it heckled act two", minutesOffset: 6),
+                MessageSeed(senderIndex: 0, text: "honestly fair act two still needs work", minutesOffset: 9),
+                MessageSeed(senderIndex: 1, text: "it also left a note that says brighter spotlight on stage left", minutesOffset: 12),
+                MessageSeed(senderIndex: 0, text: "your theater is being haunted by a perfectionist", minutesOffset: 15)
+            ],
+            sceneBreaks: [
+                ("After Rehearsal", nil, 3)
             ]
         ),
         ConversationSeed(
@@ -230,7 +263,8 @@ final class ScreenshotMockDataService {
                 MessageSeed(senderIndex: 1, text: "did you turn your exam scroll invisible again", minutesOffset: 0),
                 MessageSeed(senderIndex: 0, text: "no comment from the broom closet", minutesOffset: 2),
                 MessageSeed(senderIndex: 1, text: "thats a yes", minutesOffset: 4)
-            ]
+            ],
+            sceneBreaks: []
         )
     ]
 
@@ -295,6 +329,10 @@ final class ScreenshotMockDataService {
                 message.timestamp = timestamp
                 message.displayTime = timestamp
                 return message
+            }
+
+            conversation.sceneBreaks = seed.sceneBreaks.map {
+                SceneBreak(title: $0.title, subtitle: $0.subtitle, insertBeforeOrder: $0.insertBeforeOrder)
             }
 
             modelContext.insert(conversation)

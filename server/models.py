@@ -50,6 +50,12 @@ class Message(BaseModel):
     character_id: str
 
 
+class SceneBreak(BaseModel):
+    title: str
+    subtitle: Optional[str] = None
+    insert_before_message_index: int
+
+
 class ExportSettings(BaseModel):
     export_type: ExportType = ExportType.video
     format: ExportFormat = ExportFormat.tiktok
@@ -58,15 +64,20 @@ class ExportSettings(BaseModel):
     show_typing_indicator: bool = True
     enable_sounds: bool = True
     dark_mode: bool = False
+    include_intro_card: bool = True
+    include_outro_card: bool = True
+    story_perspective: bool = True
 
 
 class RenderRequest(BaseModel):
     messages: list[Message]
+    scene_breaks: list[SceneBreak] = []
     characters: list[Character]
     theme: ChatTheme = ChatTheme.imessage
     settings: ExportSettings = ExportSettings()
     conversation_title: str = "Chat"
     is_group_chat: bool = False
+    content_intent: str = "fictional_story"
 
 
 class JobStatus(str, Enum):
@@ -117,6 +128,7 @@ class GenerateStoryRequest(BaseModel):
     mood: str = "dramatic"      # Can be preset or custom string
     num_characters: int = 2
     character_names: Optional[List[str]] = None
+    content_intent: str = "fictional_story"
 
 
 class GeneratedCharacter(BaseModel):
@@ -135,9 +147,11 @@ class GeneratedMessage(BaseModel):
 
 class GenerateStoryResponse(BaseModel):
     title: str
-    group_name: Optional[str] = None  # Realistic group chat name for groups (3+ characters)
+    group_name: Optional[str] = None  # Story-forward cast title for groups (3+ characters)
     characters: List[GeneratedCharacter]
     messages: List[GeneratedMessage]
+    scene_breaks: List[SceneBreak] = []
+    content_intent: str = "fictional_story"
 
 
 class AIServiceStatus(BaseModel):

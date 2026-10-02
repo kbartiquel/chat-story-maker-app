@@ -15,7 +15,7 @@ iOS app for creating fake text message conversations and exporting them as video
 - Pillow + pilmoji (emoji support)
 - ffmpeg for video encoding (streams frames, memory efficient)
 - OpenAI GPT / Anthropic Claude for AI generation
-- Deployed on Render.com (Standard tier - $25/month, 2GB RAM)
+- Deployed on Google Cloud Run under the `textery` project (`kimoytech@gmail.com`)
 - Max 2 concurrent renders (queue limiter)
 
 ## Design System
@@ -407,7 +407,7 @@ ChatStoryMaker/
 - [x] Usage limits (3 free video exports, 5 free AI generations)
 - [x] Screenshot export with Long Screenshot + Paginated modes
 - [x] RevenueCat SDK integrated
-- [x] Server deployed to Render.com
+- [x] Server deployed to Google Cloud Run in the dedicated `textery` project
 - [x] iOS app updated with production URL
 - [x] Memory-efficient video renderer
 - [x] Dynamic paywall with intro offer support (Quiz Maker AI style)

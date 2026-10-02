@@ -168,6 +168,25 @@ class ChatEditorViewModel {
         saveContext()
     }
 
+    // MARK: - Scene Breaks
+
+    func addSceneBreak(title: String, beforeMessageOrder: Int) {
+        var breaks = conversation.sceneBreaks
+        breaks.append(SceneBreak(title: title, subtitle: nil, insertBeforeOrder: beforeMessageOrder))
+        conversation.sceneBreaks = breaks
+        conversation.updatedAt = Date()
+        saveContext()
+        HapticManager.impact(.medium)
+    }
+
+    func deleteSceneBreak(id: UUID) {
+        var breaks = conversation.sceneBreaks
+        breaks.removeAll { $0.id == id }
+        conversation.sceneBreaks = breaks
+        conversation.updatedAt = Date()
+        saveContext()
+    }
+
     // MARK: - Character Management
 
     private let participantColors = ["#FF3B30", "#34C759", "#FF9500", "#5856D6", "#FF2D55", "#AF52DE", "#00C7BE", "#FF6482"]

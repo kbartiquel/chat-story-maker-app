@@ -37,7 +37,7 @@ from tracking_manager import (
 # Initialize FastAPI
 app = FastAPI(
     title="Textery API",
-    description="Video rendering API for chat story videos",
+    description="API for fictional dialogue story generation and story-video rendering",
     version="1.0.0"
 )
 
@@ -180,9 +180,10 @@ async def ai_status():
 @app.post("/generate", response_model=GenerateStoryResponse)
 async def generate_story(request: GenerateStoryRequest, http_request: Request):
     """
-    Generate a chat story conversation using AI.
+    Generate a fictional dialogue story scene using AI.
 
     Uses either OpenAI GPT or Anthropic Claude based on AI_SERVICE env var.
+    This endpoint only supports fictional story-scene generation for creator content.
     """
     try:
         result = generate_chat_story(
@@ -191,14 +192,17 @@ async def generate_story(request: GenerateStoryRequest, http_request: Request):
             genre=request.genre,
             mood=request.mood,
             num_characters=request.num_characters,
-            character_names=request.character_names
+            character_names=request.character_names,
+            content_intent=request.content_intent,
         )
 
         response = GenerateStoryResponse(
             title=result["title"],
             group_name=result.get("group_name"),
             characters=result["characters"],
-            messages=result["messages"]
+            messages=result["messages"],
+            scene_breaks=result.get("scene_breaks", []),
+            content_intent=request.content_intent,
         )
         user_id = http_request.headers.get("X-User-ID")
         if user_id:
@@ -209,6 +213,7 @@ async def generate_story(request: GenerateStoryRequest, http_request: Request):
                     "message_count": len(result["messages"]),
                     "genre": request.genre,
                     "mood": request.mood,
+                    "content_intent": request.content_intent,
                 },
                 country=http_request.headers.get("cf-ipcountry"),
                 app_version=http_request.headers.get("X-App-Version"),
@@ -232,6 +237,9 @@ async def start_render(request: RenderRequest, background_tasks: BackgroundTasks
     Start a video rendering job.
     Returns immediately with a job_id for polling.
     """
+    if request.content_intent != "fictional_story":
+        raise HTTPException(status_code=400, detail="Only fictional_story renders are supported")
+
     job_id = str(uuid.uuid4())
 
     # Create job entry

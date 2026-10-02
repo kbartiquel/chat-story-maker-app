@@ -24,8 +24,8 @@ struct HomeView: View {
                     conversationList
                 }
             }
-            .navigationTitle("Chat Stories")
-            .searchable(text: $viewModel.searchQuery, prompt: "Search conversations")
+            .navigationTitle("Story Library")
+            .searchable(text: $viewModel.searchQuery, prompt: "Search story scenes")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
